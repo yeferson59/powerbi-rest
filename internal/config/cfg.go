@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	DatabaseURL string `json:"databaseUrl"`
+	Port        string `json:"port"`
 }
 
 func New() *Config {
@@ -20,6 +21,7 @@ func (c *Config) Load() error {
 	}
 
 	c.DatabaseURL = os.Getenv("DATABASE_URL")
+	c.Port = os.Getenv("PORT")
 
 	return nil
 }

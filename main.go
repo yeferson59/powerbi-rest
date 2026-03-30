@@ -36,7 +36,7 @@ func main() {
 		e.Logger.Error("failed to initialize routes", "error", err)
 	}
 
-	if err := e.Start(":8080"); err != nil {
+	if err := e.Start(":" + cfg.Port); err != nil {
 		e.Logger.Error("failed to start server", "error", err)
 	}
 }
