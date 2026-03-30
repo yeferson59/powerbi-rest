@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -17,6 +18,7 @@ func New() *Config {
 
 func (c *Config) Load() error {
 	if err := godotenv.Load(); err != nil {
+		fmt.Println(err.Error())
 		return err
 	}
 
