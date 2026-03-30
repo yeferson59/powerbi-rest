@@ -16,9 +16,7 @@ func New() *Config {
 }
 
 func (c *Config) Load() error {
-	if err := godotenv.Load(); err != nil {
-		return err
-	}
+	_ = godotenv.Load()
 
 	c.DatabaseURL = os.Getenv("DATABASE_URL")
 	c.Port = os.Getenv("PORT")
