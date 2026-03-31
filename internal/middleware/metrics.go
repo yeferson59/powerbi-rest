@@ -20,30 +20,56 @@ type Metric struct {
 }
 
 func (m *Middleware) Metrics() echo.MiddlewareFunc {
+	apiRoutes := map[string]string{
+		"/o1":     "O(1)",
+		"/on":     "O(n)",
+		"/onlogn": "O(n log n)",
+		"/on2":    "O(n²)",
+		"/o2n":    "O(2^n)",
+	}
+
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {
 			start := time.Now()
 
 			err := next(c)
 
+			path := c.Path()
+
+			if path == "/" || path == "/summary" {
+				return err
+			}
+
 			elapsed := float64(time.Since(start).Microseconds()) / 1000.0
 
-			var n int
+			statusCode := 200
+			if resp, ok := c.Response().(*echo.Response); ok {
+				statusCode = resp.Status
+				if statusCode == 0 {
+					statusCode = 200
+				}
+			}
+
+			complexity := ""
+			n := 0
+
+			if val, ok := c.Get("complexity").(string); ok {
+				complexity = val
+			} else if apiComplexity, exists := apiRoutes[path]; exists {
+				complexity = apiComplexity
+			}
+
 			if val, ok := c.Get("n").(int); ok {
 				n = val
 			}
-			var complexity string
-			if val, ok := c.Get("complexity").(string); ok {
-				complexity = val
-			}
 
 			metric := Metric{
-				Route:       c.Path(),
+				Route:       path,
 				Method:      c.Request().Method,
 				Complexity:  complexity,
 				NParam:      n,
 				ResponseMs:  elapsed,
-				StatusCode:  0,
+				StatusCode:  statusCode,
 				RequestedAt: time.Now(),
 			}
 

@@ -16,40 +16,150 @@
                 100: "#dbeafe",
                 500: "#3b82f6",
                 600: "#2563eb",
+                700: "#1d4ed8",
+                800: "#1e40af",
                 900: "#1e3a8a",
+              },
+              success: "#10b981",
+              warning: "#f59e0b",
+              danger: "#ef4444",
+              info: "#8b5cf6",
+            },
+            animation: {
+              "fade-in": "fadeIn 0.5s ease-out",
+              "slide-up": "slideUp 0.5s ease-out",
+              "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+            },
+            keyframes: {
+              fadeIn: {
+                "0%": { opacity: "0" },
+                "100%": { opacity: "1" },
+              },
+              slideUp: {
+                "0%": { opacity: "0", transform: "translateY(20px)" },
+                "100%": { opacity: "1", transform: "translateY(0)" },
               },
             },
           },
         },
       };
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
     <style>
+      :root {
+        --bg-primary: #f8fafc;
+        --bg-secondary: #ffffff;
+        --text-primary: #1e293b;
+        --text-secondary: #64748b;
+        --border-color: #e2e8f0;
+        --card-shadow:
+          0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+      }
+      .dark {
+        --bg-primary: #0f172a;
+        --bg-secondary: #1e293b;
+        --text-primary: #f1f5f9;
+        --text-secondary: #94a3b8;
+        --border-color: #334155;
+        --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+      }
       body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        font-family: "Inter", sans-serif;
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
         transition:
           background-color 0.3s ease,
           color 0.3s ease;
       }
+      .glass {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+      }
+      .dark .glass {
+        background: rgba(30, 41, 59, 0.7);
+      }
       .card {
-        transition:
-          transform 0.2s ease-in-out,
-          box-shadow 0.2s ease-in-out;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--card-shadow);
+        transition: all 0.3s ease;
       }
       .card:hover {
-        transform: translateY(-4px);
+        transform: translateY(-2px);
+        box-shadow:
+          0 10px 15px -3px rgb(0 0 0 / 0.1),
+          0 4px 6px -4px rgb(0 0 0 / 0.1);
       }
+      .stat-card {
+        position: relative;
+        overflow: hidden;
+      }
+      .stat-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+      }
+      .stat-card.o1::before {
+        background: linear-gradient(to bottom, #3b82f6, #60a5fa);
+      }
+      .stat-card.on::before {
+        background: linear-gradient(to bottom, #10b981, #34d399);
+      }
+      .stat-card.onlogn::before {
+        background: linear-gradient(to bottom, #f59e0b, #fbbf24);
+      }
+      .stat-card.on2::before {
+        background: linear-gradient(to bottom, #ef4444, #f87171);
+      }
+      .stat-card.o2n::before {
+        background: linear-gradient(to bottom, #8b5cf6, #a78bfa);
+      }
+
+      .gradient-text {
+        background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
       .header-gradient {
-        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        background: linear-gradient(
+          135deg,
+          #1e3a8a 0%,
+          #3b82f6 50%,
+          #8b5cf6 100%
+        );
+        background-size: 200% 200%;
+        animation: gradient-shift 8s ease infinite;
       }
-      .dark .header-gradient {
-        background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+      @keyframes gradient-shift {
+        0%,
+        100% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
       }
-      /* Custom scrollbar for better look on dark/light modes */
+
+      .metric-trend-up {
+        color: #10b981;
+      }
+      .metric-trend-down {
+        color: #ef4444;
+      }
+
       ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
@@ -61,244 +171,618 @@
         background-color: rgba(156, 163, 175, 0.5);
         border-radius: 4px;
       }
+
+      .chart-container {
+        position: relative;
+        height: 280px;
+        width: 100%;
+      }
+
+      .loading-shimmer {
+        background: linear-gradient(
+          90deg,
+          #f0f0f0 25%,
+          #e0e0e0 50%,
+          #f0f0f0 75%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+      }
+      .dark .loading-shimmer {
+        background: linear-gradient(
+          90deg,
+          #1e293b 25%,
+          #334155 50%,
+          #1e293b 75%
+        );
+        background-size: 200% 100%;
+      }
+      @keyframes shimmer {
+        0% {
+          background-position: -200% 0;
+        }
+        100% {
+          background-position: 200% 0;
+        }
+      }
+
+      .pulse-dot {
+        animation: pulse-dot 2s infinite;
+      }
+      @keyframes pulse-dot {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.2);
+          opacity: 0.7;
+        }
+      }
+
+      .tooltip-custom {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        pointer-events: none;
+        z-index: 100;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
     </style>
   </head>
-  <body
-    class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100 min-h-screen flex flex-col"
-  >
+  <body class="min-h-screen flex flex-col">
     <!-- Top Navigation -->
-    <nav
-      class="header-gradient text-white p-4 shadow-lg flex flex-wrap justify-between items-center z-10 sticky top-0"
-    >
-      <div class="flex items-center space-x-3 mb-2 sm:mb-0">
-        <div class="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-          <i class="fas fa-chart-network text-2xl"></i>
+    <nav class="header-gradient text-white p-4 shadow-lg sticky top-0 z-50">
+      <div
+        class="container mx-auto flex flex-wrap justify-between items-center"
+      >
+        <div class="flex items-center space-x-4">
+          <div class="p-3 bg-white/20 rounded-xl backdrop-blur-sm shadow-lg">
+            <i class="fas fa-chart-network text-2xl"></i>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-bold tracking-tight">
+              API Performance
+            </h1>
+            <p class="text-xs text-white/70 hidden sm:block">
+              Real-time monitoring dashboard
+            </p>
+          </div>
         </div>
-        <h1 class="text-xl sm:text-2xl font-bold tracking-tight">
-          API Performance
-        </h1>
-      </div>
-      <div class="flex items-center space-x-4 text-sm">
-        <span
-          class="hidden sm:inline-flex items-center space-x-2 text-white/90"
-        >
-          <i class="fas fa-clock"></i>
-          <span id="last-updated">Updating...</span>
-        </span>
 
-        <!-- Dark Mode Toggle -->
-        <button
-          id="theme-toggle"
-          onclick="toggleTheme()"
-          class="p-2.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors shadow-inner backdrop-blur-sm focus:outline-none"
-        >
-          <i class="fas fa-moon" id="theme-icon"></i>
-        </button>
+        <div class="flex items-center space-x-3 mt-4 sm:mt-0">
+          <!-- Status Indicator -->
+          <div
+            class="flex items-center space-x-2 bg-white/10 px-3 py-2 rounded-lg backdrop-blur-sm"
+          >
+            <span class="pulse-dot w-2 h-2 rounded-full bg-green-400"></span>
+            <span id="connection-status" class="text-sm font-medium">Live</span>
+          </div>
 
-        <button
-          onclick="refreshData()"
-          class="bg-white text-brand-900 dark:bg-gray-800 dark:text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-100 dark:hover:bg-gray-700 transition font-semibold flex items-center"
-        >
-          <i class="fas fa-sync-alt mr-2"></i> Refresh
-        </button>
+          <!-- Last Updated -->
+          <div
+            class="hidden md:flex items-center space-x-2 text-white/80 text-sm"
+          >
+            <i class="fas fa-clock"></i>
+            <span id="last-updated">--:--:--</span>
+          </div>
+
+          <!-- Theme Toggle -->
+          <button
+            id="theme-toggle"
+            onclick="toggleTheme()"
+            class="p-2.5 rounded-lg bg-white/10 hover:bg-white/20 transition-all shadow-inner backdrop-blur-sm focus:outline-none hover:scale-105"
+          >
+            <i class="fas fa-moon" id="theme-icon"></i>
+          </button>
+
+          <!-- Refresh Button -->
+          <button
+            onclick="refreshData()"
+            class="bg-white text-brand-900 px-4 py-2 rounded-lg shadow-md hover:bg-gray-100 transition font-semibold flex items-center space-x-2 hover:scale-105"
+          >
+            <i class="fas fa-sync-alt" id="refresh-icon"></i>
+            <span class="hidden sm:inline">Refresh</span>
+          </button>
+        </div>
       </div>
     </nav>
 
     <!-- Main Content -->
     <main class="container mx-auto p-4 sm:p-6 flex-grow">
-      <!-- Summary KPIs -->
-      <div
-        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8"
-        id="kpi-container"
-      >
-        <div
-          class="card p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 border-blue-500 dark:border-blue-400"
-        >
-          <div class="flex justify-between items-start">
-            <div>
-              <h3
-                class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider"
-              >
-                Total Requests
-              </h3>
-              <p
-                class="text-3xl font-extrabold text-gray-800 dark:text-white mt-1"
-                id="kpi-total"
-              >
-                -
-              </p>
-            </div>
-            <div
-              class="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-500 dark:text-blue-400 rounded-lg"
-            >
-              <i class="fas fa-server text-xl"></i>
-            </div>
-          </div>
+      <!-- KPI Section -->
+      <div class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-bold flex items-center space-x-2">
+            <i class="fas fa-th-large text-brand-500"></i>
+            <span>Key Metrics</span>
+          </h2>
+          <select
+            id="time-range"
+            class="text-sm border rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800"
+          >
+            <option value="1">Last 1 hour</option>
+            <option value="24" selected>Last 24 hours</option>
+            <option value="168">Last 7 days</option>
+            <option value="720">Last 30 days</option>
+          </select>
         </div>
 
         <div
-          class="card p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 border-green-500 dark:border-green-400"
+          class="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+          id="kpi-container"
         >
-          <div class="flex justify-between items-start">
-            <div>
-              <h3
-                class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider"
+          <!-- Total Requests -->
+          <div class="card stat-card o1 rounded-xl p-5">
+            <div class="flex justify-between items-start mb-3">
+              <div
+                class="p-2.5 bg-blue-50 dark:bg-blue-900/30 text-blue-500 rounded-lg"
               >
-                Avg O(1) Time
-              </h3>
-              <p
-                class="text-3xl font-extrabold text-gray-800 dark:text-white mt-1"
-                id="kpi-o1"
+                <i class="fas fa-server text-lg"></i>
+              </div>
+              <span
+                class="text-xs font-medium text-green-500 flex items-center"
               >
-                -
-              </p>
+                <i class="fas fa-arrow-up mr-1"></i> 12%
+              </span>
             </div>
+            <p class="text-2xl font-extrabold" id="kpi-total">--</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Total Requests
+            </p>
             <div
-              class="p-3 bg-green-50 dark:bg-green-900/30 text-green-500 dark:text-green-400 rounded-lg"
+              class="mt-3 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden"
             >
-              <i class="fas fa-bolt text-xl"></i>
+              <div
+                class="h-full bg-blue-500 rounded-full"
+                style="width: 75%"
+              ></div>
             </div>
           </div>
-        </div>
 
-        <div
-          class="card p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 border-yellow-500 dark:border-yellow-400"
-        >
-          <div class="flex justify-between items-start">
-            <div>
-              <h3
-                class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider"
+          <!-- O(1) Avg Time -->
+          <div class="card stat-card o1 rounded-xl p-5">
+            <div class="flex justify-between items-start mb-3">
+              <div
+                class="p-2.5 bg-blue-50 dark:bg-blue-900/30 text-blue-500 rounded-lg"
               >
-                Avg O(N) Time
-              </h3>
-              <p
-                class="text-3xl font-extrabold text-gray-800 dark:text-white mt-1"
-                id="kpi-on"
+                <i class="fas fa-bolt text-lg"></i>
+              </div>
+              <span
+                class="text-xs font-medium text-green-500 flex items-center"
               >
-                -
-              </p>
+                <i class="fas fa-arrow-down mr-1"></i> 5%
+              </span>
             </div>
+            <p class="text-2xl font-extrabold" id="kpi-o1">--</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Avg O(1) Time
+            </p>
             <div
-              class="p-3 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-500 dark:text-yellow-400 rounded-lg"
+              class="mt-3 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden"
             >
-              <i class="fas fa-wave-square text-xl"></i>
+              <div
+                class="h-full bg-blue-500 rounded-full"
+                style="width: 60%"
+              ></div>
             </div>
           </div>
-        </div>
 
-        <div
-          class="card p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 border-purple-500 dark:border-purple-400"
-        >
-          <div class="flex justify-between items-start">
-            <div>
-              <h3
-                class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider"
+          <!-- O(N) Avg Time -->
+          <div class="card stat-card on rounded-xl p-5">
+            <div class="flex justify-between items-start mb-3">
+              <div
+                class="p-2.5 bg-green-50 dark:bg-green-900/30 text-green-500 rounded-lg"
               >
-                Success Rate
-              </h3>
-              <p
-                class="text-3xl font-extrabold text-gray-800 dark:text-white mt-1"
-                id="kpi-success"
+                <i class="fas fa-wave-square text-lg"></i>
+              </div>
+              <span
+                class="text-xs font-medium text-green-500 flex items-center"
               >
-                -
-              </p>
+                <i class="fas fa-arrow-down mr-1"></i> 8%
+              </span>
             </div>
+            <p class="text-2xl font-extrabold" id="kpi-on">--</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Avg O(N) Time
+            </p>
             <div
-              class="p-3 bg-purple-50 dark:bg-purple-900/30 text-purple-500 dark:text-purple-400 rounded-lg"
+              class="mt-3 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden"
             >
-              <i class="fas fa-check-circle text-xl"></i>
+              <div
+                class="h-full bg-green-500 rounded-full"
+                style="width: 45%"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Success Rate -->
+          <div class="card stat-card onlogn rounded-xl p-5">
+            <div class="flex justify-between items-start mb-3">
+              <div
+                class="p-2.5 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-500 rounded-lg"
+              >
+                <i class="fas fa-check-circle text-lg"></i>
+              </div>
+              <span
+                class="text-xs font-medium text-green-500 flex items-center"
+              >
+                <i class="fas fa-arrow-up mr-1"></i> 2%
+              </span>
+            </div>
+            <p class="text-2xl font-extrabold" id="kpi-success">--</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Success Rate
+            </p>
+            <div
+              class="mt-3 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden"
+            >
+              <div
+                class="h-full bg-yellow-500 rounded-full"
+                style="width: 95%"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Error Rate -->
+          <div
+            class="card stat-card on2 rounded-xl p-5 col-span-2 lg:col-span-1"
+          >
+            <div class="flex justify-between items-start mb-3">
+              <div
+                class="p-2.5 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-lg"
+              >
+                <i class="fas fa-exclamation-triangle text-lg"></i>
+              </div>
+              <span class="text-xs font-medium text-red-500 flex items-center">
+                <i class="fas fa-arrow-up mr-1"></i> 1%
+              </span>
+            </div>
+            <p class="text-2xl font-extrabold" id="kpi-error">--</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Error Rate
+            </p>
+            <div
+              class="mt-3 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden"
+            >
+              <div
+                class="h-full bg-red-500 rounded-full"
+                style="width: 5%"
+              ></div>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Charts Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
-        <!-- Requests by Complexity (Doughnut) -->
-        <div
-          class="card p-5 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"
-        >
-          <h2
-            class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center"
-          >
-            <i class="fas fa-chart-pie mr-2 text-brand-500"></i> Request
-            Distribution
-          </h2>
-          <div class="relative h-64 w-full flex justify-center">
+      <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+        <!-- Request Distribution (Doughnut) -->
+        <div class="card rounded-xl p-5 col-span-1 lg:col-span-1">
+          <div class="flex items-center justify-between mb-4">
+            <h3
+              class="font-bold text-gray-700 dark:text-gray-200 flex items-center space-x-2"
+            >
+              <i class="fas fa-chart-pie text-brand-500"></i>
+              <span>Distribution</span>
+            </h3>
+            <button
+              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <i class="fas fa-ellipsis-v"></i>
+            </button>
+          </div>
+          <div class="chart-container flex items-center justify-center">
             <canvas id="distributionChart"></canvas>
+          </div>
+          <div class="grid grid-cols-2 gap-2 mt-4 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="flex items-center"
+                ><span class="w-2 h-2 rounded-full bg-blue-500 mr-2"></span
+                >O(1)</span
+              >
+              <span class="font-semibold" id="dist-o1">0</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="flex items-center"
+                ><span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span
+                >O(N)</span
+              >
+              <span class="font-semibold" id="dist-on">0</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="flex items-center"
+                ><span class="w-2 h-2 rounded-full bg-yellow-500 mr-2"></span
+                >O(N log N)</span
+              >
+              <span class="font-semibold" id="dist-onlogn">0</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="flex items-center"
+                ><span class="w-2 h-2 rounded-full bg-red-500 mr-2"></span
+                >O(N²)</span
+              >
+              <span class="font-semibold" id="dist-on2">0</span>
+            </div>
+            <div class="flex items-center justify-between col-span-2">
+              <span class="flex items-center"
+                ><span class="w-2 h-2 rounded-full bg-purple-500 mr-2"></span
+                >O(2^N)</span
+              >
+              <span class="font-semibold" id="dist-o2n">0</span>
+            </div>
           </div>
         </div>
 
-        <!-- Complexity Comparison Chart -->
-        <div
-          class="card p-5 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"
-        >
-          <h2
-            class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center"
-          >
-            <i class="fas fa-chart-bar mr-2 text-brand-500"></i> Avg Time by
-            Complexity
-          </h2>
-          <div class="relative h-64 w-full">
+        <!-- Average Time by Complexity (Bar) -->
+        <div class="card rounded-xl p-5 col-span-1 lg:col-span-1">
+          <div class="flex items-center justify-between mb-4">
+            <h3
+              class="font-bold text-gray-700 dark:text-gray-200 flex items-center space-x-2"
+            >
+              <i class="fas fa-chart-bar text-brand-500"></i>
+              <span>Avg Time by Complexity</span>
+            </h3>
+            <div class="flex space-x-1">
+              <button
+                class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700"
+              >
+                ms
+              </button>
+              <button
+                class="text-xs px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                μs
+              </button>
+            </div>
+          </div>
+          <div class="chart-container">
             <canvas id="comparisonChart"></canvas>
           </div>
         </div>
 
-        <!-- O(1) & O(N) Distribution -->
-        <div
-          class="card p-5 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"
-        >
-          <h2
-            class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center"
-          >
-            <i class="fas fa-chart-line mr-2 text-brand-500"></i> O(1) vs O(N)
-          </h2>
-          <div class="relative h-64 w-full">
+        <!-- Performance Score (Gauge) -->
+        <div class="card rounded-xl p-5 col-span-1 lg:col-span-1">
+          <div class="flex items-center justify-between mb-4">
+            <h3
+              class="font-bold text-gray-700 dark:text-gray-200 flex items-center space-x-2"
+            >
+              <i class="fas fa-tachometer-alt text-brand-500"></i>
+              <span>Performance Score</span>
+            </h3>
+          </div>
+          <div class="chart-container flex items-center justify-center">
+            <canvas id="gaugeChart"></canvas>
+          </div>
+          <div class="grid grid-cols-3 gap-4 mt-4 text-center">
+            <div>
+              <p class="text-lg font-bold text-blue-500" id="score-fast">0</p>
+              <p class="text-xs text-gray-500">Fast</p>
+            </div>
+            <div>
+              <p class="text-lg font-bold text-yellow-500" id="score-normal">
+                0
+              </p>
+              <p class="text-xs text-gray-500">Normal</p>
+            </div>
+            <div>
+              <p class="text-lg font-bold text-red-500" id="score-slow">0</p>
+              <p class="text-xs text-gray-500">Slow</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- O(1) vs O(N) Timeline -->
+        <div class="card rounded-xl p-5 col-span-1 lg:col-span-2">
+          <div class="flex items-center justify-between mb-4">
+            <h3
+              class="font-bold text-gray-700 dark:text-gray-200 flex items-center space-x-2"
+            >
+              <i class="fas fa-chart-line text-brand-500"></i>
+              <span>O(1) vs O(N) Performance</span>
+            </h3>
+            <div class="flex space-x-2">
+              <button
+                class="text-xs px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+              >
+                O(1)
+              </button>
+              <button
+                class="text-xs px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+              >
+                O(N)
+              </button>
+            </div>
+          </div>
+          <div class="chart-container">
             <canvas id="linearChart"></canvas>
           </div>
         </div>
 
-        <!-- O(N log N) & O(N^2) Performance -->
-        <div
-          class="card p-5 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"
-        >
-          <h2
-            class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center"
-          >
-            <i class="fas fa-project-diagram mr-2 text-brand-500"></i> O(N log
-            N) vs O(N²)
-          </h2>
-          <div class="relative h-64 w-full">
+        <!-- O(N log N) vs O(N²) -->
+        <div class="card rounded-xl p-5 col-span-1 lg:col-span-1">
+          <div class="flex items-center justify-between mb-4">
+            <h3
+              class="font-bold text-gray-700 dark:text-gray-200 flex items-center space-x-2"
+            >
+              <i class="fas fa-project-diagram text-brand-500"></i>
+              <span>Quadratic</span>
+            </h3>
+          </div>
+          <div class="chart-container">
             <canvas id="quadraticChart"></canvas>
           </div>
         </div>
 
         <!-- Exponential Growth O(2^N) -->
-        <div
-          class="card p-5 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 lg:col-span-2"
-        >
-          <h2
-            class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center"
-          >
-            <i class="fas fa-rocket mr-2 text-brand-500"></i> Exponential Growth
-            O(2^N)
-          </h2>
-          <div class="relative h-72 w-full">
+        <div class="card rounded-xl p-5 col-span-1 lg:col-span-2">
+          <div class="flex items-center justify-between mb-4">
+            <h3
+              class="font-bold text-gray-700 dark:text-gray-200 flex items-center space-x-2"
+            >
+              <i class="fas fa-rocket text-brand-500"></i>
+              <span>Exponential Growth O(2^N)</span>
+            </h3>
+            <span
+              class="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-2 py-1 rounded-full"
+            >
+              <i class="fas fa-exclamation-triangle mr-1"></i>Warning
+            </span>
+          </div>
+          <div class="chart-container">
             <canvas id="exponentialChart"></canvas>
           </div>
+        </div>
+
+        <!-- Response Time Distribution (Histogram) -->
+        <div class="card rounded-xl p-5 col-span-1 lg:col-span-1">
+          <div class="flex items-center justify-between mb-4">
+            <h3
+              class="font-bold text-gray-700 dark:text-gray-200 flex items-center space-x-2"
+            >
+              <i class="fas fa-histogram text-brand-500"></i>
+              <span>Response Time</span>
+            </h3>
+          </div>
+          <div class="chart-container">
+            <canvas id="histogramChart"></canvas>
+          </div>
+        </div>
+
+        <!-- API Endpoints Usage -->
+        <div class="card rounded-xl p-5 col-span-1 lg:col-span-2">
+          <div class="flex items-center justify-between mb-4">
+            <h3
+              class="font-bold text-gray-700 dark:text-gray-200 flex items-center space-x-2"
+            >
+              <i class="fas fa-sitemap text-brand-500"></i>
+              <span>Requests by Endpoint</span>
+            </h3>
+            <span class="text-xs text-gray-500" id="endpoint-count"
+              >0 endpoints</span
+            >
+          </div>
+          <div class="chart-container">
+            <canvas id="endpointsChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Status Codes -->
+        <div class="card rounded-xl p-5 col-span-1 lg:col-span-1">
+          <div class="flex items-center justify-between mb-4">
+            <h3
+              class="font-bold text-gray-700 dark:text-gray-200 flex items-center space-x-2"
+            >
+              <i class="fas fa-status-code text-brand-500"></i>
+              <span>Status Codes</span>
+            </h3>
+          </div>
+          <div class="space-y-3" id="status-codes">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded bg-green-500"></span>
+                <span class="text-sm">2xx Success</span>
+              </div>
+              <span class="font-bold" id="status-2xx">0</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded bg-yellow-500"></span>
+                <span class="text-sm">3xx Redirect</span>
+              </div>
+              <span class="font-bold" id="status-3xx">0</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded bg-orange-500"></span>
+                <span class="text-sm">4xx Client Error</span>
+              </div>
+              <span class="font-bold" id="status-4xx">0</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded bg-red-500"></span>
+                <span class="text-sm">5xx Server Error</span>
+              </div>
+              <span class="font-bold" id="status-5xx">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity Table -->
+      <div class="card rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3
+            class="font-bold text-gray-700 dark:text-gray-200 flex items-center space-x-2"
+          >
+            <i class="fas fa-list text-brand-500"></i>
+            <span>Recent Requests</span>
+          </h3>
+          <button class="text-sm text-brand-500 hover:text-brand-600">
+            View All <i class="fas fa-arrow-right ml-1"></i>
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-gray-200 dark:border-gray-700">
+                <th class="text-left py-3 px-2 font-semibold text-gray-500">
+                  Endpoint
+                </th>
+                <th class="text-left py-3 px-2 font-semibold text-gray-500">
+                  Complexity
+                </th>
+                <th class="text-left py-3 px-2 font-semibold text-gray-500">
+                  N Param
+                </th>
+                <th class="text-left py-3 px-2 font-semibold text-gray-500">
+                  Time (ms)
+                </th>
+                <th class="text-left py-3 px-2 font-semibold text-gray-500">
+                  Status
+                </th>
+                <th class="text-left py-3 px-2 font-semibold text-gray-500">
+                  Timestamp
+                </th>
+              </tr>
+            </thead>
+            <tbody id="recent-requests">
+              <tr>
+                <td colspan="6" class="py-8 text-center text-gray-400">
+                  Loading...
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </main>
 
     <!-- Footer -->
     <footer
-      class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-auto py-6 text-center text-sm text-gray-500 dark:text-gray-400"
+      class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-auto py-6"
     >
-      <p>Powered by Echo & Chart.js &bull; API Performance Dashboard</p>
+      <div class="container mx-auto text-center">
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          <i class="fas fa-heart text-red-500 mr-1"></i> Powered by Echo &
+          Chart.js
+          <span class="mx-2">•</span>
+          API Performance Dashboard
+        </p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+          Last updated: <span id="footer-updated">--</span>
+        </p>
+      </div>
     </footer>
 
     <script>
-      // Theme toggling logic
+      const API_BASE = "";
+      // Theme management
       function getInitialTheme() {
         if (
           localStorage.theme === "dark" ||
@@ -310,7 +794,7 @@
         return "light";
       }
 
-      function applyTheme(theme) {
+      function applyTheme(theme, updateCharts = true) {
         if (theme === "dark") {
           document.documentElement.classList.add("dark");
           document.getElementById("theme-icon").classList.remove("fa-moon");
@@ -320,7 +804,9 @@
           document.getElementById("theme-icon").classList.remove("fa-sun");
           document.getElementById("theme-icon").classList.add("fa-moon");
         }
-        updateChartTheme(theme);
+        if (updateCharts && chartsInitialized) {
+          updateChartTheme(theme);
+        }
       }
 
       function toggleTheme() {
@@ -330,32 +816,57 @@
         applyTheme(newTheme);
       }
 
-      // Initialize theme early
-      applyTheme(getInitialTheme());
+      applyTheme(getInitialTheme(), false);
 
       // Chart instances
-      let comparisonChart,
+      let distributionChart,
+        comparisonChart,
+        gaugeChart,
         linearChart,
         quadraticChart,
         exponentialChart,
-        distributionChart;
-      const API_BASE = "";
+        histogramChart,
+        endpointsChart;
+      let chartsInitialized = false;
 
       // Brand colors
       const colors = {
-        o1: { border: "#3b82f6", bg: "rgba(59, 130, 246, 0.7)" },
-        on: { border: "#10b981", bg: "rgba(16, 185, 129, 0.7)" },
-        onlogn: { border: "#f59e0b", bg: "rgba(245, 158, 11, 0.7)" },
-        on2: { border: "#ef4444", bg: "rgba(239, 68, 68, 0.7)" },
-        o2n: { border: "#8b5cf6", bg: "rgba(139, 92, 246, 0.7)" },
+        o1: {
+          border: "#3b82f6",
+          bg: "rgba(59, 130, 246, 0.8)",
+          light: "rgba(59, 130, 246, 0.2)",
+        },
+        on: {
+          border: "#10b981",
+          bg: "rgba(16, 185, 129, 0.8)",
+          light: "rgba(16, 185, 129, 0.2)",
+        },
+        onlogn: {
+          border: "#f59e0b",
+          bg: "rgba(245, 158, 11, 0.8)",
+          light: "rgba(245, 158, 11, 0.2)",
+        },
+        on2: {
+          border: "#ef4444",
+          bg: "rgba(239, 68, 68, 0.8)",
+          light: "rgba(239, 68, 68, 0.2)",
+        },
+        o2n: {
+          border: "#8b5cf6",
+          bg: "rgba(139, 92, 246, 0.8)",
+          light: "rgba(139, 92, 246, 0.2)",
+        },
       };
 
       function getChartOptions() {
         const isDark = document.documentElement.classList.contains("dark");
-        const textColor = isDark ? "#9ca3af" : "#4b5563";
+        const textColor = isDark ? "#94a3b8" : "#64748b";
         const gridColor = isDark
           ? "rgba(255, 255, 255, 0.05)"
           : "rgba(0, 0, 0, 0.05)";
+        const tooltipBg = isDark
+          ? "rgba(30, 41, 59, 0.95)"
+          : "rgba(255, 255, 255, 0.95)";
 
         return {
           responsive: true,
@@ -364,73 +875,72 @@
           plugins: {
             legend: {
               position: "bottom",
-              labels: { color: textColor, padding: 20, usePointStyle: true },
+              labels: {
+                color: textColor,
+                padding: 15,
+                usePointStyle: true,
+                font: { size: 11 },
+              },
             },
             tooltip: {
-              backgroundColor: isDark
-                ? "rgba(17, 24, 39, 0.9)"
-                : "rgba(255, 255, 255, 0.9)",
-              titleColor: isDark ? "#f3f4f6" : "#111827",
-              bodyColor: isDark ? "#d1d5db" : "#374151",
+              backgroundColor: tooltipBg,
+              titleColor: isDark ? "#f1f5f9" : "#1e293b",
+              bodyColor: isDark ? "#cbd5e1" : "#475569",
               borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
               borderWidth: 1,
-              padding: 12,
-              boxPadding: 6,
+              padding: 10,
+              cornerRadius: 8,
             },
           },
           scales: {
             x: {
               grid: { color: gridColor, drawBorder: false },
-              ticks: { color: textColor },
+              ticks: { color: textColor, font: { size: 10 } },
             },
             y: {
               grid: { color: gridColor, drawBorder: false },
-              ticks: { color: textColor },
+              ticks: { color: textColor, font: { size: 10 } },
             },
-          },
-          interaction: {
-            mode: "index",
-            intersect: false,
           },
           elements: {
             point: { radius: 3, hoverRadius: 6 },
-            line: { borderWidth: 3, tension: 0.3 },
+            line: { borderWidth: 2, tension: 0.3 },
+            bar: { borderRadius: 4 },
           },
         };
       }
 
       function getPieOptions() {
         const isDark = document.documentElement.classList.contains("dark");
-        const textColor = isDark ? "#9ca3af" : "#4b5563";
+        const textColor = isDark ? "#94a3b8" : "#64748b";
+        const tooltipBg = isDark
+          ? "rgba(30, 41, 59, 0.95)"
+          : "rgba(255, 255, 255, 0.95)";
 
         return {
           responsive: true,
           maintainAspectRatio: false,
-          color: textColor,
+          cutout: "65%",
           plugins: {
-            legend: {
-              position: "right",
-              labels: { color: textColor, usePointStyle: true },
-            },
+            legend: { display: false },
             tooltip: {
-              backgroundColor: isDark
-                ? "rgba(17, 24, 39, 0.9)"
-                : "rgba(255, 255, 255, 0.9)",
-              titleColor: isDark ? "#f3f4f6" : "#111827",
-              bodyColor: isDark ? "#d1d5db" : "#374151",
+              backgroundColor: tooltipBg,
+              titleColor: isDark ? "#f1f5f9" : "#1e293b",
+              bodyColor: isDark ? "#cbd5e1" : "#475569",
               borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
               borderWidth: 1,
+              padding: 10,
+              cornerRadius: 8,
             },
           },
         };
       }
 
-      // Initialize Charts
       function initCharts() {
         const opts = getChartOptions();
         const pieOpts = getPieOptions();
 
-        // Distribution Chart
+        // Distribution Chart (Doughnut)
         distributionChart = new Chart(
           document.getElementById("distributionChart").getContext("2d"),
           {
@@ -448,7 +958,7 @@
                     colors.o2n.border,
                   ],
                   borderWidth: 0,
-                  hoverOffset: 4,
+                  hoverOffset: 8,
                 },
               ],
             },
@@ -456,7 +966,7 @@
           },
         );
 
-        // Comparison Chart
+        // Comparison Chart (Bar)
         comparisonChart = new Chart(
           document.getElementById("comparisonChart").getContext("2d"),
           {
@@ -465,7 +975,7 @@
               labels: ["O(1)", "O(N)", "O(N log N)", "O(N²)", "O(2^N)"],
               datasets: [
                 {
-                  label: "Avg Execution Time (ms)",
+                  label: "Avg Time (ms)",
                   data: [0, 0, 0, 0, 0],
                   backgroundColor: [
                     colors.o1.bg,
@@ -482,7 +992,7 @@
                     colors.o2n.border,
                   ],
                   borderWidth: 1,
-                  borderRadius: 4,
+                  borderRadius: 6,
                 },
               ],
             },
@@ -496,7 +1006,36 @@
           },
         );
 
-        // Linear Chart
+        // Gauge Chart (Doughnut)
+        gaugeChart = new Chart(
+          document.getElementById("gaugeChart").getContext("2d"),
+          {
+            type: "doughnut",
+            data: {
+              labels: ["Fast", "Normal", "Slow"],
+              datasets: [
+                {
+                  data: [0, 0, 0],
+                  backgroundColor: ["#10b981", "#f59e0b", "#ef4444"],
+                  borderWidth: 0,
+                  circumference: 270,
+                  rotation: 225,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: "75%",
+              plugins: {
+                legend: { display: false },
+                tooltip: { enabled: false },
+              },
+            },
+          },
+        );
+
+        // Linear Chart (O(1) vs O(N))
         linearChart = new Chart(
           document.getElementById("linearChart").getContext("2d"),
           {
@@ -508,13 +1047,15 @@
                   label: "O(1)",
                   data: [],
                   borderColor: colors.o1.border,
-                  backgroundColor: colors.o1.bg,
+                  backgroundColor: colors.o1.light,
+                  fill: true,
                 },
                 {
                   label: "O(N)",
                   data: [],
                   borderColor: colors.on.border,
-                  backgroundColor: colors.on.bg,
+                  backgroundColor: colors.on.light,
+                  fill: true,
                 },
               ],
             },
@@ -534,13 +1075,15 @@
                   label: "O(N log N)",
                   data: [],
                   borderColor: colors.onlogn.border,
-                  backgroundColor: colors.onlogn.bg,
+                  backgroundColor: colors.onlogn.light,
+                  fill: true,
                 },
                 {
                   label: "O(N²)",
                   data: [],
                   borderColor: colors.on2.border,
-                  backgroundColor: colors.on2.bg,
+                  backgroundColor: colors.on2.light,
+                  fill: true,
                 },
               ],
             },
@@ -560,196 +1103,300 @@
                   label: "O(2^N)",
                   data: [],
                   borderColor: colors.o2n.border,
-                  backgroundColor: "rgba(139, 92, 246, 0.1)",
+                  backgroundColor: colors.o2n.light,
                   fill: true,
                 },
               ],
             },
-            options: opts,
+            options: {
+              ...opts,
+              scales: {
+                ...opts.scales,
+                y: { ...opts.scales.y, beginAtZero: true },
+              },
+            },
           },
         );
+
+        // Histogram Chart
+        histogramChart = new Chart(
+          document.getElementById("histogramChart").getContext("2d"),
+          {
+            type: "bar",
+            data: {
+              labels: ["<10ms", "10-50ms", "50-100ms", "100-500ms", ">500ms"],
+              datasets: [
+                {
+                  label: "Requests",
+                  data: [0, 0, 0, 0, 0],
+                  backgroundColor: [
+                    "rgba(16, 185, 129, 0.8)",
+                    "rgba(59, 130, 246, 0.8)",
+                    "rgba(245, 158, 11, 0.8)",
+                    "rgba(239, 68, 68, 0.8)",
+                    "rgba(220, 38, 38, 0.8)",
+                  ],
+                  borderRadius: 4,
+                },
+              ],
+            },
+            options: {
+              ...opts,
+              scales: {
+                ...opts.scales,
+                x: { ...opts.scales.x, grid: { display: false } },
+              },
+            },
+          },
+        );
+
+        // Endpoints Chart (Horizontal Bar)
+        endpointsChart = new Chart(
+          document.getElementById("endpointsChart").getContext("2d"),
+          {
+            type: "bar",
+            data: {
+              labels: [],
+              datasets: [
+                {
+                  label: "Requests",
+                  data: [],
+                  backgroundColor: [
+                    colors.o1.border,
+                    colors.on.border,
+                    colors.onlogn.border,
+                    colors.on2.border,
+                    colors.o2n.border,
+                  ],
+                  borderRadius: 4,
+                },
+              ],
+            },
+            options: {
+              ...opts,
+              indexAxis: "y",
+              scales: {
+                ...opts.scales,
+                x: { ...opts.scales.x, grid: { display: false } },
+                y: { ...opts.scales.y, grid: { display: false } },
+              },
+            },
+          },
+        );
+        chartsInitialized = true;
       }
 
       function updateChartTheme(theme) {
         if (!comparisonChart) return;
 
         const isDark = theme === "dark";
-        const textColor = isDark ? "#9ca3af" : "#4b5563";
+        const textColor = isDark ? "#94a3b8" : "#64748b";
         const gridColor = isDark
           ? "rgba(255, 255, 255, 0.05)"
           : "rgba(0, 0, 0, 0.05)";
         const tooltipBg = isDark
-          ? "rgba(17, 24, 39, 0.9)"
-          : "rgba(255, 255, 255, 0.9)";
-        const tooltipTitle = isDark ? "#f3f4f6" : "#111827";
-        const tooltipBody = isDark ? "#d1d5db" : "#374151";
-        const tooltipBorder = isDark
-          ? "rgba(255,255,255,0.1)"
-          : "rgba(0,0,0,0.1)";
+          ? "rgba(30, 41, 59, 0.95)"
+          : "rgba(255, 255, 255, 0.95)";
 
         const charts = [
           comparisonChart,
           linearChart,
           quadraticChart,
           exponentialChart,
+          histogramChart,
+          endpointsChart,
         ];
 
         charts.forEach((chart) => {
           if (chart.options.color) chart.options.color = textColor;
-          if (chart.options.plugins.legend.labels)
+          if (chart.options.plugins?.legend?.labels) {
             chart.options.plugins.legend.labels.color = textColor;
-          if (chart.options.scales.x) {
+          }
+          if (chart.options.scales?.x) {
             chart.options.scales.x.grid.color = gridColor;
             chart.options.scales.x.ticks.color = textColor;
           }
-          if (chart.options.scales.y) {
+          if (chart.options.scales?.y) {
             chart.options.scales.y.grid.color = gridColor;
             chart.options.scales.y.ticks.color = textColor;
           }
-          if (chart.options.plugins.tooltip) {
+          if (chart.options.plugins?.tooltip) {
             chart.options.plugins.tooltip.backgroundColor = tooltipBg;
-            chart.options.plugins.tooltip.titleColor = tooltipTitle;
-            chart.options.plugins.tooltip.bodyColor = tooltipBody;
-            chart.options.plugins.tooltip.borderColor = tooltipBorder;
           }
           chart.update();
         });
 
-        // Update Pie specific
-        distributionChart.options.color = textColor;
-        distributionChart.options.plugins.legend.labels.color = textColor;
-        distributionChart.options.plugins.tooltip.backgroundColor = tooltipBg;
-        distributionChart.options.plugins.tooltip.titleColor = tooltipTitle;
-        distributionChart.options.plugins.tooltip.bodyColor = tooltipBody;
-        distributionChart.options.plugins.tooltip.borderColor = tooltipBorder;
-        distributionChart.update();
+        // Update pie/doughnut
+        [distributionChart, gaugeChart].forEach((chart) => {
+          if (chart.options.plugins?.tooltip) {
+            chart.options.plugins.tooltip.backgroundColor = tooltipBg;
+          }
+          chart.update();
+        });
       }
 
       async function refreshData() {
+        if (!chartsInitialized) {
+          console.log("Charts not initialized yet, skipping refresh");
+          return;
+        }
+        
+        const refreshIcon = document.getElementById("refresh-icon");
+        refreshIcon.classList.add("animate-spin");
+
         const updateText = document.getElementById("last-updated");
-        const originalText = updateText.innerText;
-        updateText.innerText = "Fetching...";
-        updateText.classList.add("animate-pulse");
+        const connectionStatus = document.getElementById("connection-status");
+
+        updateText.innerText = "Loading...";
+        connectionStatus.innerHTML =
+          '<span class="pulse-dot w-2 h-2 rounded-full bg-yellow-400"></span> Loading';
+
+        let summaryData = [];
+        let apiOk = false;
 
         try {
-          const summaryRes = await fetch(`${API_BASE}/summary`).catch(
-            () => null,
-          );
-          let summaryData = summaryRes ? await summaryRes.json() : [];
-          if (!Array.isArray(summaryData)) summaryData = [];
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-          const filterData = (complexity) => {
-            const items = summaryData.filter(
-              (d) => d.complexity === complexity,
-            );
-            // Group by inputSize and calculate average time
-            const grouped = items.reduce((acc, curr) => {
-              const size = curr.n_param || 1;
-              if (!acc[size]) acc[size] = { sum: 0, count: 0 };
-              acc[size].sum += curr.response_ms;
-              acc[size].count += 1;
-              return acc;
-            }, {});
-
-            return Object.keys(grouped)
-              .map((size) => ({
-                inputSize: parseInt(size, 10),
-                time: grouped[size].sum / grouped[size].count,
-                count: grouped[size].count,
-              }))
-              .sort((a, b) => a.inputSize - b.inputSize);
-          };
-
-          const dataO1 = filterData("O(1)");
-          const dataON = filterData("O(n)");
-          const dataONLogN = filterData("O(n log n)");
-          const dataON2 = filterData("O(n²)");
-          const dataO2N = filterData("O(2^n)");
-
-          const rawCounts = [
-            summaryData.filter((d) => d.complexity === "O(1)").length,
-            summaryData.filter((d) => d.complexity === "O(n)").length,
-            summaryData.filter((d) => d.complexity === "O(n log n)").length,
-            summaryData.filter((d) => d.complexity === "O(n²)").length,
-            summaryData.filter((d) => d.complexity === "O(2^n)").length,
-          ];
-
-          updateKPIs(summaryData, dataO1, dataON);
-          updateCharts(dataO1, dataON, dataONLogN, dataON2, dataO2N, rawCounts);
-
-          const now = new Date();
-          updateText.innerText = now.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
+          const summaryRes = await fetch(`${API_BASE}/summary`, {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            signal: controller.signal,
           });
+
+          clearTimeout(timeoutId);
+
+          if (summaryRes && summaryRes.ok) {
+            apiOk = true;
+            const text = await summaryRes.text();
+
+            if (text && text.trim().length > 0) {
+              try {
+                const parsed = JSON.parse(text);
+                summaryData = Array.isArray(parsed) ? parsed : [];
+              } catch (err) {
+                console.error("JSON parse error:", err);
+                summaryData = [];
+              }
+            }
+          }
         } catch (error) {
           console.error("Error fetching data:", error);
-          updateText.innerText = "Error loading";
         } finally {
-          updateText.classList.remove("animate-pulse");
+          refreshIcon.classList.remove("animate-spin");
         }
-      }
 
-      function extractAverages(dataArray) {
-        if (!dataArray || dataArray.length === 0) return 0;
-        const totalSum = dataArray.reduce(
-          (acc, curr) => acc + curr.time * curr.count,
-          0,
-        );
-        const totalCount = dataArray.reduce((acc, curr) => acc + curr.count, 0);
-        return (totalSum / totalCount).toFixed(2);
-      }
+        if (!Array.isArray(summaryData)) summaryData = [];
 
-      function extractSeries(dataArray) {
-        if (!dataArray || dataArray.length === 0)
-          return { labels: [], data: [] };
-        return {
-          labels: dataArray.map((d) => d.inputSize),
-          data: dataArray.map((d) => d.time.toFixed(3)),
+        const filterData = (complexity) => {
+          const items = summaryData.filter(
+            (d) => d && d.complexity === complexity,
+          );
+          const grouped = items.reduce((acc, curr) => {
+            const size = Number(curr.n_param || 1);
+            const ms = Number(curr.response_ms || 0);
+            if (!acc[size]) acc[size] = { sum: 0, count: 0 };
+            acc[size].sum += ms;
+            acc[size].count += 1;
+            return acc;
+          }, {});
+
+          return Object.keys(grouped)
+            .map((size) => ({
+              inputSize: Number(size),
+              time: grouped[size].count
+                ? grouped[size].sum / grouped[size].count
+                : 0,
+              count: grouped[size].count || 0,
+            }))
+            .sort((a, b) => a.inputSize - b.inputSize);
         };
-      }
 
-      function updateKPIs(summary, d1, dn) {
-        const total = summary.length || 0;
-        document.getElementById("kpi-total").innerText = total.toLocaleString();
+        const dataO1 = filterData("O(1)");
+        const dataON = filterData("O(n)");
+        const dataONLogN = filterData("O(n log n)");
+        const dataON2 = filterData("O(n²)");
+        const dataO2N = filterData("O(2^n)");
 
+        const rawCounts = [
+          summaryData.filter((d) => d?.complexity === "O(1)").length,
+          summaryData.filter((d) => d?.complexity === "O(n)").length,
+          summaryData.filter((d) => d?.complexity === "O(n log n)").length,
+          summaryData.filter((d) => d?.complexity === "O(n²)").length,
+          summaryData.filter((d) => d?.complexity === "O(2^n)").length,
+        ];
+
+        const total = summaryData.length || 0;
+        document.getElementById("kpi-total").innerText =
+          total > 0 ? total.toLocaleString() : "--";
         document.getElementById("kpi-o1").innerText =
-          extractAverages(d1) + " ms";
+          extractAverages(dataO1) + " ms";
         document.getElementById("kpi-on").innerText =
-          extractAverages(dn) + " ms";
+          extractAverages(dataON) + " ms";
 
         if (total > 0) {
-          const successCount = summary.filter(
+          const successCount = summaryData.filter(
             (d) => d.status_code >= 200 && d.status_code < 300,
           ).length;
-          const rate = ((successCount / total) * 100).toFixed(1);
-          document.getElementById("kpi-success").innerText = rate + "%";
+          const errorCount = summaryData.filter(
+            (d) => d.status_code >= 400,
+          ).length;
+          const successRate = ((successCount / total) * 100).toFixed(1);
+          const errorRate = ((errorCount / total) * 100).toFixed(1);
+          document.getElementById("kpi-success").innerText = successRate + "%";
+          document.getElementById("kpi-error").innerText = errorRate + "%";
         } else {
-          document.getElementById("kpi-success").innerText = "N/A";
+          document.getElementById("kpi-success").innerText = "--";
+          document.getElementById("kpi-error").innerText = "--";
         }
-      }
 
-      function updateCharts(d1, dn, dnlogn, dn2, d2n, counts) {
-        // Update Distribution Chart
-        distributionChart.data.datasets[0].data = counts;
+        // Update Distribution
+        distributionChart.data.datasets[0].data = rawCounts;
         distributionChart.update();
 
-        // Update Comparison Bar Chart
+        document.getElementById("dist-o1").innerText = rawCounts[0];
+        document.getElementById("dist-on").innerText = rawCounts[1];
+        document.getElementById("dist-onlogn").innerText = rawCounts[2];
+        document.getElementById("dist-on2").innerText = rawCounts[3];
+        document.getElementById("dist-o2n").innerText = rawCounts[4];
+
+        // Update Comparison Bar
         comparisonChart.data.datasets[0].data = [
-          extractAverages(d1),
-          extractAverages(dn),
-          extractAverages(dnlogn),
-          extractAverages(dn2),
-          extractAverages(d2n),
+          extractAverages(dataO1),
+          extractAverages(dataON),
+          extractAverages(dataONLogN),
+          extractAverages(dataON2),
+          extractAverages(dataO2N),
         ];
         comparisonChart.update();
 
-        // Update Linear Chart
-        const s1 = extractSeries(d1);
-        const sn = extractSeries(dn);
+        // Performance Score Gauge
+        const fastCount = summaryData.filter(
+          (d) => Number(d.response_ms) < 10,
+        ).length;
+        const normalCount = summaryData.filter(
+          (d) => Number(d.response_ms) >= 10 && Number(d.response_ms) < 100,
+        ).length;
+        const slowCount = summaryData.filter(
+          (d) => Number(d.response_ms) >= 100,
+        ).length;
 
-        // Merge labels for linear
+        document.getElementById("score-fast").innerText = fastCount;
+        document.getElementById("score-normal").innerText = normalCount;
+        document.getElementById("score-slow").innerText = slowCount;
+
+        if (fastCount + normalCount + slowCount > 0) {
+          gaugeChart.data.datasets[0].data = [
+            fastCount,
+            normalCount,
+            slowCount,
+          ];
+          gaugeChart.update();
+        }
+
+        // Linear Chart
+        const s1 = extractSeries(dataO1);
+        const sn = extractSeries(dataON);
         const linLabels = Array.from(
           new Set([...s1.labels, ...sn.labels]),
         ).sort((a, b) => a - b);
@@ -764,9 +1411,9 @@
         linearChart.data.datasets[1].data = mapData(sn, linLabels);
         linearChart.update();
 
-        // Update Quadratic Chart
-        const snlogn = extractSeries(dnlogn);
-        const sn2 = extractSeries(dn2);
+        // Quadratic
+        const snlogn = extractSeries(dataONLogN);
+        const sn2 = extractSeries(dataON2);
         const quadLabels = Array.from(
           new Set([...snlogn.labels, ...sn2.labels]),
         ).sort((a, b) => a - b);
@@ -776,19 +1423,169 @@
         quadraticChart.data.datasets[1].data = mapData(sn2, quadLabels);
         quadraticChart.update();
 
-        // Update Exponential Chart
-        const s2n = extractSeries(d2n);
+        // Exponential
+        const s2n = extractSeries(dataO2N);
         exponentialChart.data.labels = s2n.labels;
         exponentialChart.data.datasets[0].data = s2n.data;
         exponentialChart.update();
+
+        // Histogram
+        const histData = [
+          summaryData.filter((d) => Number(d.response_ms) < 10).length,
+          summaryData.filter(
+            (d) => Number(d.response_ms) >= 10 && Number(d.response_ms) < 50,
+          ).length,
+          summaryData.filter(
+            (d) => Number(d.response_ms) >= 50 && Number(d.response_ms) < 100,
+          ).length,
+          summaryData.filter(
+            (d) => Number(d.response_ms) >= 100 && Number(d.response_ms) < 500,
+          ).length,
+          summaryData.filter((d) => Number(d.response_ms) >= 500).length,
+        ];
+        histogramChart.data.datasets[0].data = histData;
+        histogramChart.update();
+
+        // Endpoints (usando 'route' que es el campo de la API)
+        const endpointCounts = {};
+        summaryData.forEach((d) => {
+          const endpoint = d.route || "unknown";
+          endpointCounts[endpoint] = (endpointCounts[endpoint] || 0) + 1;
+        });
+        const sortedEndpoints = Object.entries(endpointCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 8);
+
+        document.getElementById("endpoint-count").innerText =
+          sortedEndpoints.length + " endpoints";
+        endpointsChart.data.labels = sortedEndpoints.map((e) => e[0]);
+        endpointsChart.data.datasets[0].data = sortedEndpoints.map((e) => e[1]);
+        endpointsChart.update();
+
+        // Status Codes
+        document.getElementById("status-2xx").innerText = summaryData.filter(
+          (d) => d.status_code >= 200 && d.status_code < 300,
+        ).length;
+        document.getElementById("status-3xx").innerText = summaryData.filter(
+          (d) => d.status_code >= 300 && d.status_code < 400,
+        ).length;
+        document.getElementById("status-4xx").innerText = summaryData.filter(
+          (d) => d.status_code >= 400 && d.status_code < 500,
+        ).length;
+        document.getElementById("status-5xx").innerText = summaryData.filter(
+          (d) => d.status_code >= 500,
+        ).length;
+
+        // Recent Requests Table (usando 'route' y 'created_at')
+        const tbody = document.getElementById("recent-requests");
+        const recent = summaryData.slice(-10).reverse();
+
+        if (recent.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="6" class="py-8 text-center text-gray-400">No recent requests</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = recent
+          .map((d) => {
+            const statusClass =
+              d.status_code >= 200 && d.status_code < 300
+                ? "text-green-500"
+                : d.status_code >= 400
+                  ? "text-red-500"
+                  : "text-yellow-500";
+            const complexityClass =
+              d.complexity === "O(1)"
+                ? "text-blue-500"
+                : d.complexity === "O(n)"
+                  ? "text-green-500"
+                  : d.complexity === "O(n log n)"
+                    ? "text-yellow-500"
+                    : d.complexity === "O(n²)"
+                      ? "text-red-500"
+                      : "text-purple-500";
+            const createdAt = d.created_at
+              ? new Date(d.created_at).toLocaleString()
+              : "-";
+            return `
+            <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+              <td class="py-3 px-2 font-mono text-xs">${d.route || "N/A"}</td>
+              <td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs font-medium ${complexityClass} bg-gray-100 dark:bg-gray-800">${d.complexity || "N/A"}</span></td>
+              <td class="py-3 px-2">${d.n_param || "-"}</td>
+              <td class="py-3 px-2 font-medium">${d.response_ms || "0"} ms</td>
+              <td class="py-3 px-2 ${statusClass} font-medium">${d.status_code || "N/A"}</td>
+              <td class="py-3 px-2 text-gray-400 text-xs">${createdAt}</td>
+            </tr>
+          `;
+          })
+          .join("");
+
+        if (apiOk) {
+          const now = new Date();
+          const timeStr = now.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          });
+          updateText.innerText = timeStr;
+          document.getElementById("footer-updated").innerText = timeStr;
+          connectionStatus.innerHTML =
+            '<span class="pulse-dot w-2 h-2 rounded-full bg-green-400"></span> Live';
+        } else {
+          updateText.innerText = "API unavailable";
+          connectionStatus.innerHTML =
+            '<span class="pulse-dot w-2 h-2 rounded-full bg-red-400"></span> Offline';
+        }
       }
 
-      // Setup on load
-      window.onload = () => {
-        initCharts();
-        refreshData();
-        setInterval(refreshData, 30000); // 30s auto-refresh
-      };
+      function extractAverages(dataArray) {
+        if (!Array.isArray(dataArray) || dataArray.length === 0) return "0.00";
+        const totalSum = dataArray.reduce(
+          (acc, curr) => acc + Number(curr.time || 0) * Number(curr.count || 0),
+          0,
+        );
+        const totalCount = dataArray.reduce(
+          (acc, curr) => acc + Number(curr.count || 0),
+          0,
+        );
+        if (!totalCount) return "0.00";
+        return (totalSum / totalCount).toFixed(2);
+      }
+
+      function extractSeries(dataArray) {
+        if (!dataArray || dataArray.length === 0)
+          return { labels: [], data: [] };
+        return {
+          labels: dataArray.map((d) => d.inputSize),
+          data: dataArray.map((d) => d.time.toFixed(3)),
+        };
+      }
+
+      async function startApp() {
+        try {
+          if (typeof Chart === "undefined") {
+            setTimeout(startApp, 500);
+            return;
+          }
+          initCharts();
+        } catch (e) {
+          console.error("Error initializing charts:", e);
+        }
+
+        try {
+          await refreshData();
+        } catch (e) {
+          console.error("Initial fetch failed:", e);
+        }
+
+        setInterval(refreshData, 30000);
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", startApp);
+      } else {
+        startApp();
+      }
     </script>
   </body>
 </html>
