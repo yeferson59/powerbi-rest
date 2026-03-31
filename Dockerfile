@@ -29,6 +29,7 @@ WORKDIR /root/
 
 # Copy the binary from builder stage
 COPY --from=builder /app/main .
+COPY --from=builder /app/dashboard.html .
 
 ENV PORT=8080
 
