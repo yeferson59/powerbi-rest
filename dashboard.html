@@ -1,10 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Algorithm Complexity Dashboard</title>
+    <title>PowerBI Rest - API Performance Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: "#eff6ff",
+                100: "#dbeafe",
+                500: "#3b82f6",
+                600: "#2563eb",
+                900: "#1e3a8a",
+              },
+            },
+          },
+        },
+      };
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
@@ -12,255 +30,635 @@
     />
     <style>
       body {
-        background-color: #f3f4f6;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        transition:
+          background-color 0.3s ease,
+          color 0.3s ease;
       }
       .card {
-        background: white;
-        border-radius: 8px;
-        box-shadow:
-          0 4px 6px -1px rgba(0, 0, 0, 0.1),
-          0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        transition: transform 0.2s ease-in-out;
+        transition:
+          transform 0.2s ease-in-out,
+          box-shadow 0.2s ease-in-out;
       }
       .card:hover {
-        transform: translateY(-2px);
+        transform: translateY(-4px);
       }
-      .header-bg {
+      .header-gradient {
         background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      }
+      .dark .header-gradient {
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+      }
+      /* Custom scrollbar for better look on dark/light modes */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: rgba(156, 163, 175, 0.5);
+        border-radius: 4px;
       }
     </style>
   </head>
-  <body class="text-gray-800">
+  <body
+    class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100 min-h-screen flex flex-col"
+  >
     <!-- Top Navigation -->
     <nav
-      class="header-bg text-white p-4 shadow-md flex justify-between items-center"
+      class="header-gradient text-white p-4 shadow-lg flex flex-wrap justify-between items-center z-10 sticky top-0"
     >
-      <div class="flex items-center space-x-3">
-        <i class="fas fa-chart-line text-2xl"></i>
-        <h1 class="text-2xl font-bold">API Performance Dashboard</h1>
+      <div class="flex items-center space-x-3 mb-2 sm:mb-0">
+        <div class="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+          <i class="fas fa-chart-network text-2xl"></i>
+        </div>
+        <h1 class="text-xl sm:text-2xl font-bold tracking-tight">
+          API Performance
+        </h1>
       </div>
-      <div class="text-sm">
-        <span class="mr-4"
-          ><i class="fas fa-clock mr-1"></i>
-          <span id="last-updated">Updating...</span></span
+      <div class="flex items-center space-x-4 text-sm">
+        <span
+          class="hidden sm:inline-flex items-center space-x-2 text-white/90"
         >
+          <i class="fas fa-clock"></i>
+          <span id="last-updated">Updating...</span>
+        </span>
+
+        <!-- Dark Mode Toggle -->
+        <button
+          id="theme-toggle"
+          onclick="toggleTheme()"
+          class="p-2.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors shadow-inner backdrop-blur-sm focus:outline-none"
+        >
+          <i class="fas fa-moon" id="theme-icon"></i>
+        </button>
+
         <button
           onclick="refreshData()"
-          class="bg-white text-blue-800 px-4 py-2 rounded shadow hover:bg-gray-100 transition"
+          class="bg-white text-brand-900 dark:bg-gray-800 dark:text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-100 dark:hover:bg-gray-700 transition font-semibold flex items-center"
         >
-          <i class="fas fa-sync-alt mr-1"></i> Refresh
+          <i class="fas fa-sync-alt mr-2"></i> Refresh
         </button>
       </div>
     </nav>
 
     <!-- Main Content -->
-    <div class="container mx-auto p-6">
+    <main class="container mx-auto p-4 sm:p-6 flex-grow">
       <!-- Summary KPIs -->
       <div
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8"
         id="kpi-container"
       >
-        <!-- KPIs will be injected here -->
-        <div class="card p-6 border-l-4 border-blue-500">
-          <h3
-            class="text-gray-500 text-sm font-semibold uppercase tracking-wider"
-          >
-            Total Requests
-          </h3>
-          <p class="text-3xl font-bold text-gray-800 mt-2" id="kpi-total">-</p>
+        <div
+          class="card p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 border-blue-500 dark:border-blue-400"
+        >
+          <div class="flex justify-between items-start">
+            <div>
+              <h3
+                class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider"
+              >
+                Total Requests
+              </h3>
+              <p
+                class="text-3xl font-extrabold text-gray-800 dark:text-white mt-1"
+                id="kpi-total"
+              >
+                -
+              </p>
+            </div>
+            <div
+              class="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-500 dark:text-blue-400 rounded-lg"
+            >
+              <i class="fas fa-server text-xl"></i>
+            </div>
+          </div>
         </div>
-        <div class="card p-6 border-l-4 border-green-500">
-          <h3
-            class="text-gray-500 text-sm font-semibold uppercase tracking-wider"
-          >
-            Avg O(1) Time
-          </h3>
-          <p class="text-3xl font-bold text-gray-800 mt-2" id="kpi-o1">-</p>
+
+        <div
+          class="card p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 border-green-500 dark:border-green-400"
+        >
+          <div class="flex justify-between items-start">
+            <div>
+              <h3
+                class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider"
+              >
+                Avg O(1) Time
+              </h3>
+              <p
+                class="text-3xl font-extrabold text-gray-800 dark:text-white mt-1"
+                id="kpi-o1"
+              >
+                -
+              </p>
+            </div>
+            <div
+              class="p-3 bg-green-50 dark:bg-green-900/30 text-green-500 dark:text-green-400 rounded-lg"
+            >
+              <i class="fas fa-bolt text-xl"></i>
+            </div>
+          </div>
         </div>
-        <div class="card p-6 border-l-4 border-yellow-500">
-          <h3
-            class="text-gray-500 text-sm font-semibold uppercase tracking-wider"
-          >
-            Avg O(N) Time
-          </h3>
-          <p class="text-3xl font-bold text-gray-800 mt-2" id="kpi-on">-</p>
+
+        <div
+          class="card p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 border-yellow-500 dark:border-yellow-400"
+        >
+          <div class="flex justify-between items-start">
+            <div>
+              <h3
+                class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider"
+              >
+                Avg O(N) Time
+              </h3>
+              <p
+                class="text-3xl font-extrabold text-gray-800 dark:text-white mt-1"
+                id="kpi-on"
+              >
+                -
+              </p>
+            </div>
+            <div
+              class="p-3 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-500 dark:text-yellow-400 rounded-lg"
+            >
+              <i class="fas fa-wave-square text-xl"></i>
+            </div>
+          </div>
         </div>
-        <div class="card p-6 border-l-4 border-red-500">
-          <h3
-            class="text-gray-500 text-sm font-semibold uppercase tracking-wider"
-          >
-            System Status
-          </h3>
-          <p class="text-3xl font-bold text-green-600 mt-2">Online</p>
+
+        <div
+          class="card p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 border-purple-500 dark:border-purple-400"
+        >
+          <div class="flex justify-between items-start">
+            <div>
+              <h3
+                class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider"
+              >
+                Success Rate
+              </h3>
+              <p
+                class="text-3xl font-extrabold text-gray-800 dark:text-white mt-1"
+                id="kpi-success"
+              >
+                -
+              </p>
+            </div>
+            <div
+              class="p-3 bg-purple-50 dark:bg-purple-900/30 text-purple-500 dark:text-purple-400 rounded-lg"
+            >
+              <i class="fas fa-check-circle text-xl"></i>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Charts Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Complexity Comparison Chart -->
-        <div class="card p-4">
-          <h2 class="text-lg font-bold mb-4 text-gray-700 border-b pb-2">
-            Time Complexity Comparison
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
+        <!-- Requests by Complexity (Doughnut) -->
+        <div
+          class="card p-5 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"
+        >
+          <h2
+            class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center"
+          >
+            <i class="fas fa-chart-pie mr-2 text-brand-500"></i> Request
+            Distribution
           </h2>
-          <div class="relative h-72 w-full">
+          <div class="relative h-64 w-full flex justify-center">
+            <canvas id="distributionChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Complexity Comparison Chart -->
+        <div
+          class="card p-5 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"
+        >
+          <h2
+            class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center"
+          >
+            <i class="fas fa-chart-bar mr-2 text-brand-500"></i> Avg Time by
+            Complexity
+          </h2>
+          <div class="relative h-64 w-full">
             <canvas id="comparisonChart"></canvas>
           </div>
         </div>
 
         <!-- O(1) & O(N) Distribution -->
-        <div class="card p-4">
-          <h2 class="text-lg font-bold mb-4 text-gray-700 border-b pb-2">
-            O(1) vs O(N) Performance
+        <div
+          class="card p-5 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"
+        >
+          <h2
+            class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center"
+          >
+            <i class="fas fa-chart-line mr-2 text-brand-500"></i> O(1) vs O(N)
           </h2>
-          <div class="relative h-72 w-full">
+          <div class="relative h-64 w-full">
             <canvas id="linearChart"></canvas>
           </div>
         </div>
 
         <!-- O(N log N) & O(N^2) Performance -->
-        <div class="card p-4">
-          <h2 class="text-lg font-bold mb-4 text-gray-700 border-b pb-2">
-            O(N log N) vs O(N²)
+        <div
+          class="card p-5 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"
+        >
+          <h2
+            class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center"
+          >
+            <i class="fas fa-project-diagram mr-2 text-brand-500"></i> O(N log
+            N) vs O(N²)
           </h2>
-          <div class="relative h-72 w-full">
+          <div class="relative h-64 w-full">
             <canvas id="quadraticChart"></canvas>
           </div>
         </div>
 
         <!-- Exponential Growth O(2^N) -->
-        <div class="card p-4">
-          <h2 class="text-lg font-bold mb-4 text-gray-700 border-b pb-2">
-            Exponential Growth O(2^N)
+        <div
+          class="card p-5 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 lg:col-span-2"
+        >
+          <h2
+            class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center"
+          >
+            <i class="fas fa-rocket mr-2 text-brand-500"></i> Exponential Growth
+            O(2^N)
           </h2>
           <div class="relative h-72 w-full">
             <canvas id="exponentialChart"></canvas>
           </div>
         </div>
       </div>
-    </div>
+    </main>
+
+    <!-- Footer -->
+    <footer
+      class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-auto py-6 text-center text-sm text-gray-500 dark:text-gray-400"
+    >
+      <p>Powered by Echo & Chart.js &bull; API Performance Dashboard</p>
+    </footer>
 
     <script>
-      // Chart instances
-      let comparisonChart, linearChart, quadraticChart, exponentialChart;
+      // Theme toggling logic
+      function getInitialTheme() {
+        if (
+          localStorage.theme === "dark" ||
+          (!("theme" in localStorage) &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches)
+        ) {
+          return "dark";
+        }
+        return "light";
+      }
 
-      // Base API URL
+      function applyTheme(theme) {
+        if (theme === "dark") {
+          document.documentElement.classList.add("dark");
+          document.getElementById("theme-icon").classList.remove("fa-moon");
+          document.getElementById("theme-icon").classList.add("fa-sun");
+        } else {
+          document.documentElement.classList.remove("dark");
+          document.getElementById("theme-icon").classList.remove("fa-sun");
+          document.getElementById("theme-icon").classList.add("fa-moon");
+        }
+        updateChartTheme(theme);
+      }
+
+      function toggleTheme() {
+        const isDark = document.documentElement.classList.contains("dark");
+        const newTheme = isDark ? "light" : "dark";
+        localStorage.theme = newTheme;
+        applyTheme(newTheme);
+      }
+
+      // Initialize theme early
+      applyTheme(getInitialTheme());
+
+      // Chart instances
+      let comparisonChart,
+        linearChart,
+        quadraticChart,
+        exponentialChart,
+        distributionChart;
       const API_BASE = "";
 
-      // Common Chart.js options
-      const commonOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: "bottom" },
-        },
+      // Brand colors
+      const colors = {
+        o1: { border: "#3b82f6", bg: "rgba(59, 130, 246, 0.7)" },
+        on: { border: "#10b981", bg: "rgba(16, 185, 129, 0.7)" },
+        onlogn: { border: "#f59e0b", bg: "rgba(245, 158, 11, 0.7)" },
+        on2: { border: "#ef4444", bg: "rgba(239, 68, 68, 0.7)" },
+        o2n: { border: "#8b5cf6", bg: "rgba(139, 92, 246, 0.7)" },
       };
+
+      function getChartOptions() {
+        const isDark = document.documentElement.classList.contains("dark");
+        const textColor = isDark ? "#9ca3af" : "#4b5563";
+        const gridColor = isDark
+          ? "rgba(255, 255, 255, 0.05)"
+          : "rgba(0, 0, 0, 0.05)";
+
+        return {
+          responsive: true,
+          maintainAspectRatio: false,
+          color: textColor,
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: { color: textColor, padding: 20, usePointStyle: true },
+            },
+            tooltip: {
+              backgroundColor: isDark
+                ? "rgba(17, 24, 39, 0.9)"
+                : "rgba(255, 255, 255, 0.9)",
+              titleColor: isDark ? "#f3f4f6" : "#111827",
+              bodyColor: isDark ? "#d1d5db" : "#374151",
+              borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+              borderWidth: 1,
+              padding: 12,
+              boxPadding: 6,
+            },
+          },
+          scales: {
+            x: {
+              grid: { color: gridColor, drawBorder: false },
+              ticks: { color: textColor },
+            },
+            y: {
+              grid: { color: gridColor, drawBorder: false },
+              ticks: { color: textColor },
+            },
+          },
+          interaction: {
+            mode: "index",
+            intersect: false,
+          },
+          elements: {
+            point: { radius: 3, hoverRadius: 6 },
+            line: { borderWidth: 3, tension: 0.3 },
+          },
+        };
+      }
+
+      function getPieOptions() {
+        const isDark = document.documentElement.classList.contains("dark");
+        const textColor = isDark ? "#9ca3af" : "#4b5563";
+
+        return {
+          responsive: true,
+          maintainAspectRatio: false,
+          color: textColor,
+          plugins: {
+            legend: {
+              position: "right",
+              labels: { color: textColor, usePointStyle: true },
+            },
+            tooltip: {
+              backgroundColor: isDark
+                ? "rgba(17, 24, 39, 0.9)"
+                : "rgba(255, 255, 255, 0.9)",
+              titleColor: isDark ? "#f3f4f6" : "#111827",
+              bodyColor: isDark ? "#d1d5db" : "#374151",
+              borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+              borderWidth: 1,
+            },
+          },
+        };
+      }
 
       // Initialize Charts
       function initCharts() {
-        const ctxComp = document
-          .getElementById("comparisonChart")
-          .getContext("2d");
-        comparisonChart = new Chart(ctxComp, {
-          type: "bar",
-          data: {
-            labels: ["O(1)", "O(N)", "O(N log N)", "O(N²)", "O(2^N)"],
-            datasets: [
-              {
-                label: "Average Execution Time (ms)",
-                data: [0, 0, 0, 0, 0],
-                backgroundColor: [
-                  "rgba(59, 130, 246, 0.7)",
-                  "rgba(16, 185, 129, 0.7)",
-                  "rgba(245, 158, 11, 0.7)",
-                  "rgba(239, 68, 68, 0.7)",
-                  "rgba(139, 92, 246, 0.7)",
-                ],
-                borderWidth: 1,
-              },
-            ],
-          },
-          options: commonOptions,
-        });
+        const opts = getChartOptions();
+        const pieOpts = getPieOptions();
 
-        const ctxLin = document.getElementById("linearChart").getContext("2d");
-        linearChart = new Chart(ctxLin, {
-          type: "line",
-          data: {
-            labels: [],
-            datasets: [
-              { label: "O(1)", data: [], borderColor: "#3b82f6", tension: 0.1 },
-              { label: "O(N)", data: [], borderColor: "#10b981", tension: 0.1 },
-            ],
+        // Distribution Chart
+        distributionChart = new Chart(
+          document.getElementById("distributionChart").getContext("2d"),
+          {
+            type: "doughnut",
+            data: {
+              labels: ["O(1)", "O(N)", "O(N log N)", "O(N²)", "O(2^N)"],
+              datasets: [
+                {
+                  data: [0, 0, 0, 0, 0],
+                  backgroundColor: [
+                    colors.o1.border,
+                    colors.on.border,
+                    colors.onlogn.border,
+                    colors.on2.border,
+                    colors.o2n.border,
+                  ],
+                  borderWidth: 0,
+                  hoverOffset: 4,
+                },
+              ],
+            },
+            options: pieOpts,
           },
-          options: commonOptions,
-        });
+        );
 
-        const ctxQuad = document
-          .getElementById("quadraticChart")
-          .getContext("2d");
-        quadraticChart = new Chart(ctxQuad, {
-          type: "line",
-          data: {
-            labels: [],
-            datasets: [
-              {
-                label: "O(N log N)",
-                data: [],
-                borderColor: "#f59e0b",
-                tension: 0.1,
+        // Comparison Chart
+        comparisonChart = new Chart(
+          document.getElementById("comparisonChart").getContext("2d"),
+          {
+            type: "bar",
+            data: {
+              labels: ["O(1)", "O(N)", "O(N log N)", "O(N²)", "O(2^N)"],
+              datasets: [
+                {
+                  label: "Avg Execution Time (ms)",
+                  data: [0, 0, 0, 0, 0],
+                  backgroundColor: [
+                    colors.o1.bg,
+                    colors.on.bg,
+                    colors.onlogn.bg,
+                    colors.on2.bg,
+                    colors.o2n.bg,
+                  ],
+                  borderColor: [
+                    colors.o1.border,
+                    colors.on.border,
+                    colors.onlogn.border,
+                    colors.on2.border,
+                    colors.o2n.border,
+                  ],
+                  borderWidth: 1,
+                  borderRadius: 4,
+                },
+              ],
+            },
+            options: {
+              ...opts,
+              scales: {
+                ...opts.scales,
+                x: { ...opts.scales.x, grid: { display: false } },
               },
-              {
-                label: "O(N²)",
-                data: [],
-                borderColor: "#ef4444",
-                tension: 0.1,
-              },
-            ],
+            },
           },
-          options: commonOptions,
-        });
+        );
 
-        const ctxExp = document
-          .getElementById("exponentialChart")
-          .getContext("2d");
-        exponentialChart = new Chart(ctxExp, {
-          type: "line",
-          data: {
-            labels: [],
-            datasets: [
-              {
-                label: "O(2^N)",
-                data: [],
-                borderColor: "#8b5cf6",
-                fill: true,
-                backgroundColor: "rgba(139, 92, 246, 0.2)",
-              },
-            ],
+        // Linear Chart
+        linearChart = new Chart(
+          document.getElementById("linearChart").getContext("2d"),
+          {
+            type: "line",
+            data: {
+              labels: [],
+              datasets: [
+                {
+                  label: "O(1)",
+                  data: [],
+                  borderColor: colors.o1.border,
+                  backgroundColor: colors.o1.bg,
+                },
+                {
+                  label: "O(N)",
+                  data: [],
+                  borderColor: colors.on.border,
+                  backgroundColor: colors.on.bg,
+                },
+              ],
+            },
+            options: opts,
           },
-          options: commonOptions,
-        });
+        );
+
+        // Quadratic Chart
+        quadraticChart = new Chart(
+          document.getElementById("quadraticChart").getContext("2d"),
+          {
+            type: "line",
+            data: {
+              labels: [],
+              datasets: [
+                {
+                  label: "O(N log N)",
+                  data: [],
+                  borderColor: colors.onlogn.border,
+                  backgroundColor: colors.onlogn.bg,
+                },
+                {
+                  label: "O(N²)",
+                  data: [],
+                  borderColor: colors.on2.border,
+                  backgroundColor: colors.on2.bg,
+                },
+              ],
+            },
+            options: opts,
+          },
+        );
+
+        // Exponential Chart
+        exponentialChart = new Chart(
+          document.getElementById("exponentialChart").getContext("2d"),
+          {
+            type: "line",
+            data: {
+              labels: [],
+              datasets: [
+                {
+                  label: "O(2^N)",
+                  data: [],
+                  borderColor: colors.o2n.border,
+                  backgroundColor: "rgba(139, 92, 246, 0.1)",
+                  fill: true,
+                },
+              ],
+            },
+            options: opts,
+          },
+        );
       }
 
-      // Fetch data and update dashboard
+      function updateChartTheme(theme) {
+        if (!comparisonChart) return;
+
+        const isDark = theme === "dark";
+        const textColor = isDark ? "#9ca3af" : "#4b5563";
+        const gridColor = isDark
+          ? "rgba(255, 255, 255, 0.05)"
+          : "rgba(0, 0, 0, 0.05)";
+        const tooltipBg = isDark
+          ? "rgba(17, 24, 39, 0.9)"
+          : "rgba(255, 255, 255, 0.9)";
+        const tooltipTitle = isDark ? "#f3f4f6" : "#111827";
+        const tooltipBody = isDark ? "#d1d5db" : "#374151";
+        const tooltipBorder = isDark
+          ? "rgba(255,255,255,0.1)"
+          : "rgba(0,0,0,0.1)";
+
+        const charts = [
+          comparisonChart,
+          linearChart,
+          quadraticChart,
+          exponentialChart,
+        ];
+
+        charts.forEach((chart) => {
+          if (chart.options.color) chart.options.color = textColor;
+          if (chart.options.plugins.legend.labels)
+            chart.options.plugins.legend.labels.color = textColor;
+          if (chart.options.scales.x) {
+            chart.options.scales.x.grid.color = gridColor;
+            chart.options.scales.x.ticks.color = textColor;
+          }
+          if (chart.options.scales.y) {
+            chart.options.scales.y.grid.color = gridColor;
+            chart.options.scales.y.ticks.color = textColor;
+          }
+          if (chart.options.plugins.tooltip) {
+            chart.options.plugins.tooltip.backgroundColor = tooltipBg;
+            chart.options.plugins.tooltip.titleColor = tooltipTitle;
+            chart.options.plugins.tooltip.bodyColor = tooltipBody;
+            chart.options.plugins.tooltip.borderColor = tooltipBorder;
+          }
+          chart.update();
+        });
+
+        // Update Pie specific
+        distributionChart.options.color = textColor;
+        distributionChart.options.plugins.legend.labels.color = textColor;
+        distributionChart.options.plugins.tooltip.backgroundColor = tooltipBg;
+        distributionChart.options.plugins.tooltip.titleColor = tooltipTitle;
+        distributionChart.options.plugins.tooltip.bodyColor = tooltipBody;
+        distributionChart.options.plugins.tooltip.borderColor = tooltipBorder;
+        distributionChart.update();
+      }
+
       async function refreshData() {
-        document.getElementById("last-updated").innerText = "Updating...";
+        const updateText = document.getElementById("last-updated");
+        const originalText = updateText.innerText;
+        updateText.innerText = "Fetching...";
+        updateText.classList.add("animate-pulse");
 
         try {
-          // Fetch summary data
           const summaryRes = await fetch(`${API_BASE}/summary`).catch(
             () => null,
           );
           let summaryData = summaryRes ? await summaryRes.json() : [];
-          if (!Array.isArray(summaryData)) {
-            summaryData = [];
-          }
+          if (!Array.isArray(summaryData)) summaryData = [];
 
-          const filterData = (complexity) =>
-            summaryData
-              .filter((d) => d.complexity === complexity)
-              .map((d) => ({ inputSize: d.n_param || 1, time: d.response_ms }))
+          const filterData = (complexity) => {
+            const items = summaryData.filter(
+              (d) => d.complexity === complexity,
+            );
+            // Group by inputSize and calculate average time
+            const grouped = items.reduce((acc, curr) => {
+              const size = curr.n_param || 1;
+              if (!acc[size]) acc[size] = { sum: 0, count: 0 };
+              acc[size].sum += curr.response_ms;
+              acc[size].count += 1;
+              return acc;
+            }, {});
+
+            return Object.keys(grouped)
+              .map((size) => ({
+                inputSize: parseInt(size, 10),
+                time: grouped[size].sum / grouped[size].count,
+                count: grouped[size].count,
+              }))
               .sort((a, b) => a.inputSize - b.inputSize);
+          };
 
           const dataO1 = filterData("O(1)");
           const dataON = filterData("O(n)");
@@ -268,52 +666,75 @@
           const dataON2 = filterData("O(n²)");
           const dataO2N = filterData("O(2^n)");
 
-          updateKPIs(summaryData, dataO1, dataON);
-          updateCharts(dataO1, dataON, dataONLogN, dataON2, dataO2N);
+          const rawCounts = [
+            summaryData.filter((d) => d.complexity === "O(1)").length,
+            summaryData.filter((d) => d.complexity === "O(n)").length,
+            summaryData.filter((d) => d.complexity === "O(n log n)").length,
+            summaryData.filter((d) => d.complexity === "O(n²)").length,
+            summaryData.filter((d) => d.complexity === "O(2^n)").length,
+          ];
 
-          document.getElementById("last-updated").innerText =
-            new Date().toLocaleTimeString();
+          updateKPIs(summaryData, dataO1, dataON);
+          updateCharts(dataO1, dataON, dataONLogN, dataON2, dataO2N, rawCounts);
+
+          const now = new Date();
+          updateText.innerText = now.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          });
         } catch (error) {
           console.error("Error fetching data:", error);
-          document.getElementById("last-updated").innerText =
-            "Error loading data";
+          updateText.innerText = "Error loading";
+        } finally {
+          updateText.classList.remove("animate-pulse");
         }
       }
 
       function extractAverages(dataArray) {
         if (!dataArray || dataArray.length === 0) return 0;
-        // Assuming data has 'time' property, fallback to length or raw value
-        const sum = dataArray.reduce(
-          (acc, curr) => acc + (curr.time || curr.value || 0),
+        const totalSum = dataArray.reduce(
+          (acc, curr) => acc + curr.time * curr.count,
           0,
         );
-        return (sum / dataArray.length).toFixed(2);
+        const totalCount = dataArray.reduce((acc, curr) => acc + curr.count, 0);
+        return (totalSum / totalCount).toFixed(2);
       }
 
       function extractSeries(dataArray) {
         if (!dataArray || dataArray.length === 0)
-          return { labels: [1, 2, 3, 4, 5], data: [0, 0, 0, 0, 0] };
-        // Map to x (size/id) and y (time)
+          return { labels: [], data: [] };
         return {
-          labels: dataArray.map((d, i) => d.inputSize || d.id || i + 1),
-          data: dataArray.map((d) => d.time || d.value || 0),
+          labels: dataArray.map((d) => d.inputSize),
+          data: dataArray.map((d) => d.time.toFixed(3)),
         };
       }
 
       function updateKPIs(summary, d1, dn) {
-        if (summary && Array.isArray(summary)) {
-          document.getElementById("kpi-total").innerText = summary.length;
-        } else {
-          document.getElementById("kpi-total").innerText = 0;
-        }
+        const total = summary.length || 0;
+        document.getElementById("kpi-total").innerText = total.toLocaleString();
 
         document.getElementById("kpi-o1").innerText =
           extractAverages(d1) + " ms";
         document.getElementById("kpi-on").innerText =
           extractAverages(dn) + " ms";
+
+        if (total > 0) {
+          const successCount = summary.filter(
+            (d) => d.status_code >= 200 && d.status_code < 300,
+          ).length;
+          const rate = ((successCount / total) * 100).toFixed(1);
+          document.getElementById("kpi-success").innerText = rate + "%";
+        } else {
+          document.getElementById("kpi-success").innerText = "N/A";
+        }
       }
 
-      function updateCharts(d1, dn, dnlogn, dn2, d2n) {
+      function updateCharts(d1, dn, dnlogn, dn2, d2n, counts) {
+        // Update Distribution Chart
+        distributionChart.data.datasets[0].data = counts;
+        distributionChart.update();
+
         // Update Comparison Bar Chart
         comparisonChart.data.datasets[0].data = [
           extractAverages(d1),
@@ -327,19 +748,32 @@
         // Update Linear Chart
         const s1 = extractSeries(d1);
         const sn = extractSeries(dn);
-        linearChart.data.labels =
-          sn.labels.length > s1.labels.length ? sn.labels : s1.labels;
-        linearChart.data.datasets[0].data = s1.data;
-        linearChart.data.datasets[1].data = sn.data;
+
+        // Merge labels for linear
+        const linLabels = Array.from(
+          new Set([...s1.labels, ...sn.labels]),
+        ).sort((a, b) => a - b);
+        const mapData = (series, allLabels) =>
+          allLabels.map((lbl) => {
+            const idx = series.labels.indexOf(lbl);
+            return idx >= 0 ? series.data[idx] : null;
+          });
+
+        linearChart.data.labels = linLabels;
+        linearChart.data.datasets[0].data = mapData(s1, linLabels);
+        linearChart.data.datasets[1].data = mapData(sn, linLabels);
         linearChart.update();
 
         // Update Quadratic Chart
         const snlogn = extractSeries(dnlogn);
         const sn2 = extractSeries(dn2);
-        quadraticChart.data.labels =
-          sn2.labels.length > snlogn.labels.length ? sn2.labels : snlogn.labels;
-        quadraticChart.data.datasets[0].data = snlogn.data;
-        quadraticChart.data.datasets[1].data = sn2.data;
+        const quadLabels = Array.from(
+          new Set([...snlogn.labels, ...sn2.labels]),
+        ).sort((a, b) => a - b);
+
+        quadraticChart.data.labels = quadLabels;
+        quadraticChart.data.datasets[0].data = mapData(snlogn, quadLabels);
+        quadraticChart.data.datasets[1].data = mapData(sn2, quadLabels);
         quadraticChart.update();
 
         // Update Exponential Chart
@@ -352,11 +786,8 @@
       // Setup on load
       window.onload = () => {
         initCharts();
-        // Initial mock data load if API is not yet available, else it will fetch
         refreshData();
-
-        // Auto refresh every 30 seconds
-        setInterval(refreshData, 30000);
+        setInterval(refreshData, 30000); // 30s auto-refresh
       };
     </script>
   </body>
