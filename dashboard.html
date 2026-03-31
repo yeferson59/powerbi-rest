@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Algorithm Complexity Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background-color: #f3f4f6;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+      .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow:
+          0 4px 6px -1px rgba(0, 0, 0, 0.1),
+          0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transition: transform 0.2s ease-in-out;
+      }
+      .card:hover {
+        transform: translateY(-2px);
+      }
+      .header-bg {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      }
+    </style>
+  </head>
+  <body class="text-gray-800">
+    <!-- Top Navigation -->
+    <nav
+      class="header-bg text-white p-4 shadow-md flex justify-between items-center"
+    >
+      <div class="flex items-center space-x-3">
+        <i class="fas fa-chart-line text-2xl"></i>
+        <h1 class="text-2xl font-bold">API Performance Dashboard</h1>
+      </div>
+      <div class="text-sm">
+        <span class="mr-4"
+          ><i class="fas fa-clock mr-1"></i>
+          <span id="last-updated">Updating...</span></span
+        >
+        <button
+          onclick="refreshData()"
+          class="bg-white text-blue-800 px-4 py-2 rounded shadow hover:bg-gray-100 transition"
+        >
+          <i class="fas fa-sync-alt mr-1"></i> Refresh
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto p-6">
+      <!-- Summary KPIs -->
+      <div
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+        id="kpi-container"
+      >
+        <!-- KPIs will be injected here -->
+        <div class="card p-6 border-l-4 border-blue-500">
+          <h3
+            class="text-gray-500 text-sm font-semibold uppercase tracking-wider"
+          >
+            Total Requests
+          </h3>
+          <p class="text-3xl font-bold text-gray-800 mt-2" id="kpi-total">-</p>
+        </div>
+        <div class="card p-6 border-l-4 border-green-500">
+          <h3
+            class="text-gray-500 text-sm font-semibold uppercase tracking-wider"
+          >
+            Avg O(1) Time
+          </h3>
+          <p class="text-3xl font-bold text-gray-800 mt-2" id="kpi-o1">-</p>
+        </div>
+        <div class="card p-6 border-l-4 border-yellow-500">
+          <h3
+            class="text-gray-500 text-sm font-semibold uppercase tracking-wider"
+          >
+            Avg O(N) Time
+          </h3>
+          <p class="text-3xl font-bold text-gray-800 mt-2" id="kpi-on">-</p>
+        </div>
+        <div class="card p-6 border-l-4 border-red-500">
+          <h3
+            class="text-gray-500 text-sm font-semibold uppercase tracking-wider"
+          >
+            System Status
+          </h3>
+          <p class="text-3xl font-bold text-green-600 mt-2">Online</p>
+        </div>
+      </div>
+
+      <!-- Charts Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Complexity Comparison Chart -->
+        <div class="card p-4">
+          <h2 class="text-lg font-bold mb-4 text-gray-700 border-b pb-2">
+            Time Complexity Comparison
+          </h2>
+          <div class="relative h-72 w-full">
+            <canvas id="comparisonChart"></canvas>
+          </div>
+        </div>
+
+        <!-- O(1) & O(N) Distribution -->
+        <div class="card p-4">
+          <h2 class="text-lg font-bold mb-4 text-gray-700 border-b pb-2">
+            O(1) vs O(N) Performance
+          </h2>
+          <div class="relative h-72 w-full">
+            <canvas id="linearChart"></canvas>
+          </div>
+        </div>
+
+        <!-- O(N log N) & O(N^2) Performance -->
+        <div class="card p-4">
+          <h2 class="text-lg font-bold mb-4 text-gray-700 border-b pb-2">
+            O(N log N) vs O(N²)
+          </h2>
+          <div class="relative h-72 w-full">
+            <canvas id="quadraticChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Exponential Growth O(2^N) -->
+        <div class="card p-4">
+          <h2 class="text-lg font-bold mb-4 text-gray-700 border-b pb-2">
+            Exponential Growth O(2^N)
+          </h2>
+          <div class="relative h-72 w-full">
+            <canvas id="exponentialChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Chart instances
+      let comparisonChart, linearChart, quadraticChart, exponentialChart;
+
+      // Base API URL
+      const API_BASE = "";
+
+      // Common Chart.js options
+      const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "bottom" },
+        },
+      };
+
+      // Initialize Charts
+      function initCharts() {
+        const ctxComp = document
+          .getElementById("comparisonChart")
+          .getContext("2d");
+        comparisonChart = new Chart(ctxComp, {
+          type: "bar",
+          data: {
+            labels: ["O(1)", "O(N)", "O(N log N)", "O(N²)", "O(2^N)"],
+            datasets: [
+              {
+                label: "Average Execution Time (ms)",
+                data: [0, 0, 0, 0, 0],
+                backgroundColor: [
+                  "rgba(59, 130, 246, 0.7)",
+                  "rgba(16, 185, 129, 0.7)",
+                  "rgba(245, 158, 11, 0.7)",
+                  "rgba(239, 68, 68, 0.7)",
+                  "rgba(139, 92, 246, 0.7)",
+                ],
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: commonOptions,
+        });
+
+        const ctxLin = document.getElementById("linearChart").getContext("2d");
+        linearChart = new Chart(ctxLin, {
+          type: "line",
+          data: {
+            labels: [],
+            datasets: [
+              { label: "O(1)", data: [], borderColor: "#3b82f6", tension: 0.1 },
+              { label: "O(N)", data: [], borderColor: "#10b981", tension: 0.1 },
+            ],
+          },
+          options: commonOptions,
+        });
+
+        const ctxQuad = document
+          .getElementById("quadraticChart")
+          .getContext("2d");
+        quadraticChart = new Chart(ctxQuad, {
+          type: "line",
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: "O(N log N)",
+                data: [],
+                borderColor: "#f59e0b",
+                tension: 0.1,
+              },
+              {
+                label: "O(N²)",
+                data: [],
+                borderColor: "#ef4444",
+                tension: 0.1,
+              },
+            ],
+          },
+          options: commonOptions,
+        });
+
+        const ctxExp = document
+          .getElementById("exponentialChart")
+          .getContext("2d");
+        exponentialChart = new Chart(ctxExp, {
+          type: "line",
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: "O(2^N)",
+                data: [],
+                borderColor: "#8b5cf6",
+                fill: true,
+                backgroundColor: "rgba(139, 92, 246, 0.2)",
+              },
+            ],
+          },
+          options: commonOptions,
+        });
+      }
+
+      // Fetch data and update dashboard
+      async function refreshData() {
+        document.getElementById("last-updated").innerText = "Updating...";
+
+        try {
+          // Fetch summary data
+          const summaryRes = await fetch(`${API_BASE}/summary`).catch(
+            () => null,
+          );
+          let summaryData = summaryRes ? await summaryRes.json() : [];
+          if (!Array.isArray(summaryData)) {
+            summaryData = [];
+          }
+
+          const filterData = (complexity) =>
+            summaryData
+              .filter((d) => d.complexity === complexity)
+              .map((d) => ({ inputSize: d.n_param || 1, time: d.response_ms }))
+              .sort((a, b) => a.inputSize - b.inputSize);
+
+          const dataO1 = filterData("O(1)");
+          const dataON = filterData("O(n)");
+          const dataONLogN = filterData("O(n log n)");
+          const dataON2 = filterData("O(n²)");
+          const dataO2N = filterData("O(2^n)");
+
+          updateKPIs(summaryData, dataO1, dataON);
+          updateCharts(dataO1, dataON, dataONLogN, dataON2, dataO2N);
+
+          document.getElementById("last-updated").innerText =
+            new Date().toLocaleTimeString();
+        } catch (error) {
+          console.error("Error fetching data:", error);
+          document.getElementById("last-updated").innerText =
+            "Error loading data";
+        }
+      }
+
+      function extractAverages(dataArray) {
+        if (!dataArray || dataArray.length === 0) return 0;
+        // Assuming data has 'time' property, fallback to length or raw value
+        const sum = dataArray.reduce(
+          (acc, curr) => acc + (curr.time || curr.value || 0),
+          0,
+        );
+        return (sum / dataArray.length).toFixed(2);
+      }
+
+      function extractSeries(dataArray) {
+        if (!dataArray || dataArray.length === 0)
+          return { labels: [1, 2, 3, 4, 5], data: [0, 0, 0, 0, 0] };
+        // Map to x (size/id) and y (time)
+        return {
+          labels: dataArray.map((d, i) => d.inputSize || d.id || i + 1),
+          data: dataArray.map((d) => d.time || d.value || 0),
+        };
+      }
+
+      function updateKPIs(summary, d1, dn) {
+        if (summary && Array.isArray(summary)) {
+          document.getElementById("kpi-total").innerText = summary.length;
+        } else {
+          document.getElementById("kpi-total").innerText = 0;
+        }
+
+        document.getElementById("kpi-o1").innerText =
+          extractAverages(d1) + " ms";
+        document.getElementById("kpi-on").innerText =
+          extractAverages(dn) + " ms";
+      }
+
+      function updateCharts(d1, dn, dnlogn, dn2, d2n) {
+        // Update Comparison Bar Chart
+        comparisonChart.data.datasets[0].data = [
+          extractAverages(d1),
+          extractAverages(dn),
+          extractAverages(dnlogn),
+          extractAverages(dn2),
+          extractAverages(d2n),
+        ];
+        comparisonChart.update();
+
+        // Update Linear Chart
+        const s1 = extractSeries(d1);
+        const sn = extractSeries(dn);
+        linearChart.data.labels =
+          sn.labels.length > s1.labels.length ? sn.labels : s1.labels;
+        linearChart.data.datasets[0].data = s1.data;
+        linearChart.data.datasets[1].data = sn.data;
+        linearChart.update();
+
+        // Update Quadratic Chart
+        const snlogn = extractSeries(dnlogn);
+        const sn2 = extractSeries(dn2);
+        quadraticChart.data.labels =
+          sn2.labels.length > snlogn.labels.length ? sn2.labels : snlogn.labels;
+        quadraticChart.data.datasets[0].data = snlogn.data;
+        quadraticChart.data.datasets[1].data = sn2.data;
+        quadraticChart.update();
+
+        // Update Exponential Chart
+        const s2n = extractSeries(d2n);
+        exponentialChart.data.labels = s2n.labels;
+        exponentialChart.data.datasets[0].data = s2n.data;
+        exponentialChart.update();
+      }
+
+      // Setup on load
+      window.onload = () => {
+        initCharts();
+        // Initial mock data load if API is not yet available, else it will fetch
+        refreshData();
+
+        // Auto refresh every 30 seconds
+        setInterval(refreshData, 30000);
+      };
+    </script>
+  </body>
+</html>

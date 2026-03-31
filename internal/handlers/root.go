@@ -20,6 +20,10 @@ func New(db *pgxpool.Pool) Handler {
 	}
 }
 
+func (Handler) HandlerRoot(c *echo.Context) error {
+	return c.File("dashboard.html")
+}
+
 func (Handler) HandlerO1(c *echo.Context) error {
 	c.Set("complexity", "O(1)")
 	c.Set("n", 1)

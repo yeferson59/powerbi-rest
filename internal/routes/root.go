@@ -22,10 +22,12 @@ func New(echo *echo.Echo, handler handlers.Handler, middleware middleware.Middle
 
 func (r Route) Init() error {
 	r.echo.Use(r.middleware.RequestID())
+	r.echo.Use(r.middleware.Cors())
 	r.echo.Use(r.middleware.Logger())
 	r.echo.Use(r.middleware.Error())
 	r.echo.Use(r.middleware.Metrics())
 
+	r.echo.GET("/", r.handler.HandlerRoot)
 	r.echo.GET("/o1", r.handler.HandlerO1)
 	r.echo.GET("/on", r.handler.HandlerOn)
 	r.echo.GET("/onlogn", r.handler.HandlerONLogN)
