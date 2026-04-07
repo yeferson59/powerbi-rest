@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"fmt"
 	"math/rand"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -188,4 +190,120 @@ func (h *Handler) HandlerSummary(c *echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, metrics)
+}
+
+const N = 10_000_000
+
+func Sequential() float64 {
+	arr := make([]int, N)
+
+	t0 := time.Now()
+
+	for i := range N {
+		arr[i] = rand.Intn(200)
+	}
+
+	t1 := time.Since(t0)
+
+	return t1.Seconds()
+}
+
+func Parallel() float64 {
+	var wg sync.WaitGroup
+	arr := make([]int, N)
+
+	tp0 := time.Now()
+
+	wg.Go(func() {
+		for i := range N {
+			arr[i] = rand.Intn(200)
+		}
+	})
+
+	wg.Wait()
+
+	tp1 := time.Since(tp0)
+
+	fmt.Println(arr)
+
+	return tp1.Seconds()
+}
+
+func ParallelWithThreads() float64 {
+	var wg sync.WaitGroup
+	totalThreads := 12
+	chunckSize := N / totalThreads
+	arr := make([]int, N)
+
+	tp0 := time.Now()
+	for i := range totalThreads {
+		wg.Go(func() {
+			start := i * chunckSize
+			end := start + chunckSize
+			if (i + 1) == totalThreads {
+				end = N
+			}
+
+			for j := start; j < end; j++ {
+				arr[j] = rand.Intn(200)
+			}
+		})
+	}
+
+	wg.Wait()
+
+	tp1 := time.Since(tp0)
+
+	return tp1.Seconds()
+}
+
+func (h *Handler) HandlerSequential(c *echo.Context) error {
+	timeSeq := Sequential()
+
+	c.Set("complexity", "O(n)")
+	c.Set("n", N)
+
+	return c.JSON(http.StatusOK, timeSeq)
+}
+
+func (h *Handler) HandlerParallel(c *echo.Context) error {
+	timePar := Parallel()
+
+	c.Set("complexity", "O(n)")
+	c.Set("n", N)
+
+	return c.JSON(http.StatusOK, timePar)
+}
+
+func (h *Handler) HandlerParallelWithThreads(c *echo.Context) error {
+	timePar2 := ParallelWithThreads()
+
+	c.Set("complexity", "O(n)")
+	c.Set("n", N)
+
+	return c.JSON(http.StatusOK, timePar2)
+}
+
+func (h *Handler) HandlerParallelMetrics(c *echo.Context) error {
+	timeSeq := Sequential()
+
+	timePar1 := Parallel()
+
+	timePar2 := ParallelWithThreads()
+
+	speedUp := timeSeq / timePar1
+	speedUp2 := timeSeq / timePar2
+
+	porcentParallel := (1 - (1 / speedUp)) / (1 - (1 / 2.0))
+	porcentParallel2 := (1 - (1 / speedUp2)) / (1 - (1 / 12.0))
+
+	return c.JSON(http.StatusOK, map[string]float64{
+		"timeSeq":          timeSeq,
+		"timePar1":         timePar1,
+		"timePar2":         timePar2,
+		"speedUp":          speedUp,
+		"speedUp2":         speedUp2,
+		"porcentParallel":  porcentParallel,
+		"porcentParallel2": porcentParallel2,
+	})
 }

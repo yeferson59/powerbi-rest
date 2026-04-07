@@ -34,6 +34,10 @@ func (r Route) Init() error {
 	r.echo.GET("/on2", r.handler.HandlerON2)
 	r.echo.GET("/o2n", r.handler.HandlerO2N)
 	r.echo.GET("/summary", r.handler.HandlerSummary)
+	r.echo.GET("/sequential", r.handler.HandlerSequential)
+	r.echo.GET("/parallel", r.handler.HandlerParallel)
+	r.echo.GET("/parallel-with-threads", r.handler.HandlerParallelWithThreads)
+	r.echo.GET("/parallel-metrics", r.handler.HandlerParallelMetrics)
 
 	return nil
 }
