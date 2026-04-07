@@ -2,7 +2,7 @@
 
 # Script de stress test con diferentes n
 for n in 100 500 1000 2000 5000; do
-  for route in "on" "onlogn" "on2"; do
+  for route in "on" "onlogn" "on2" "sequential" "parallel" "parallel-with-threads" ; do
     for i in $(seq 1 20); do
       curl -s "https://powerbi-rest-production.up.railway.app/$route?n=$n" > /dev/null
     done
