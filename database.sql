@@ -15,5 +15,3 @@ CREATE INDEX idx_metrics_route       ON metrics(route);
 CREATE INDEX idx_metrics_complexity  ON metrics(complexity);
 CREATE INDEX idx_metrics_requested   ON metrics(created_at);
 CREATE INDEX idx_metrics_n_param     ON metrics(n_param);
-
-INSERT INTO metrics (request_id, route, method, complexity, n_param, response_ms, status_code, error_message, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
