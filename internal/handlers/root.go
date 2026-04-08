@@ -20,6 +20,10 @@ func New(metricsStore metrics.Store) *Handler {
 }
 
 func (Handler) HandlerRoot(c *echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
+	c.Response().Header().Set("Pragma", "no-cache")
+	c.Response().Header().Set("Expires", "0")
+
 	return c.File("dashboard.html")
 }
 
@@ -151,6 +155,10 @@ func (Handler) HandlerO2N(c *echo.Context) error {
 }
 
 func (h *Handler) HandlerSummary(c *echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
+	c.Response().Header().Set("Pragma", "no-cache")
+	c.Response().Header().Set("Expires", "0")
+
 	records, err := h.metricsStore.List(c.Request().Context())
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})

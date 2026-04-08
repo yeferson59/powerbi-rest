@@ -38,16 +38,16 @@ COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
 
 # Set working directory
-WORKDIR /root/
+WORKDIR /app
 
-# Copy the binary from builder stage
-COPY --from=builder /app/main .
-COPY --from=builder /app/dashboard.html .
+# Copy runtime artifacts
+COPY --from=builder --chown=65534:65534 /app/main .
+COPY --from=builder --chown=65534:65534 /app/dashboard.html .
 
 ENV PORT=8080
 
 # Expose port 8080
-EXPOSE ${PORT}
+EXPOSE 8080
 
 USER 65534:65534
 
