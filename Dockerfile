@@ -49,5 +49,7 @@ ENV PORT=8080
 # Expose port 8080
 EXPOSE ${PORT}
 
+USER 65534:65534
+
 # Command to run the application
 CMD ["./main"]
