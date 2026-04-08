@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -20,6 +21,14 @@ func (c *Config) Load() error {
 
 	c.DatabaseURL = os.Getenv("DATABASE_URL")
 	c.Port = os.Getenv("PORT")
+
+	if c.DatabaseURL == "" {
+		return fmt.Errorf("DATABASE_URL is required")
+	}
+
+	if c.Port == "" {
+		c.Port = "8080"
+	}
 
 	return nil
 }

@@ -1,13 +1,13 @@
 package middleware
 
-import "github.com/jackc/pgx/v5/pgxpool"
+import "github.com/yeferson59/powerbi-rest/internal/metrics"
 
 type Middleware struct {
-	db *pgxpool.Pool
+	metricsStore metrics.Store
 }
 
-func New(db *pgxpool.Pool) Middleware {
-	return Middleware{
-		db: db,
+func New(metricsStore metrics.Store) *Middleware {
+	return &Middleware{
+		metricsStore: metricsStore,
 	}
 }

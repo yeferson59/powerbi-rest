@@ -6,26 +6,20 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v5"
+	"github.com/yeferson59/powerbi-rest/internal/metrics"
 )
-
-type Metric struct {
-	Route       string
-	Method      string
-	Complexity  string
-	NParam      int
-	ResponseMs  float64
-	StatusCode  int
-	ErrorMsg    string
-	RequestedAt time.Time
-}
 
 func (m *Middleware) Metrics() echo.MiddlewareFunc {
 	apiRoutes := map[string]string{
-		"/o1":     "O(1)",
-		"/on":     "O(n)",
-		"/onlogn": "O(n log n)",
-		"/on2":    "O(n²)",
-		"/o2n":    "O(2^n)",
+		"/o1":                    "O(1)",
+		"/on":                    "O(n)",
+		"/onlogn":                "O(n log n)",
+		"/on2":                   "O(n²)",
+		"/o2n":                   "O(2^n)",
+		"/sequential":            "O(n)",
+		"/parallel":              "O(n)",
+		"/parallel-with-threads": "O(n)",
+		"/parallel-metrics":      "O(n)",
 	}
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -63,7 +57,7 @@ func (m *Middleware) Metrics() echo.MiddlewareFunc {
 				n = val
 			}
 
-			metric := Metric{
+			metric := metrics.CreateInput{
 				Route:       path,
 				Method:      c.Request().Method,
 				Complexity:  complexity,
@@ -81,8 +75,8 @@ func (m *Middleware) Metrics() echo.MiddlewareFunc {
 				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 				defer cancel()
 
-				if _, errExec := m.db.Exec(ctx, "INSERT INTO metrics (route, method, complexity, n_param, response_ms, status_code, error_message, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", metric.Route, metric.Method, metric.Complexity, metric.NParam, metric.ResponseMs, metric.StatusCode, metric.ErrorMsg, metric.RequestedAt); errExec != nil {
-					log.Fatal(errExec)
+				if errCreate := m.metricsStore.Create(ctx, metric); errCreate != nil {
+					log.Printf("failed to persist metric: %v", errCreate)
 				}
 			}()
 

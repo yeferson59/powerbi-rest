@@ -8,19 +8,19 @@ import (
 
 type Route struct {
 	echo       *echo.Echo
-	handler    handlers.Handler
-	middleware middleware.Middleware
+	handler    *handlers.Handler
+	middleware *middleware.Middleware
 }
 
-func New(echo *echo.Echo, handler handlers.Handler, middleware middleware.Middleware) Route {
-	return Route{
+func New(echo *echo.Echo, handler *handlers.Handler, middleware *middleware.Middleware) *Route {
+	return &Route{
 		echo:       echo,
 		handler:    handler,
 		middleware: middleware,
 	}
 }
 
-func (r Route) Init() error {
+func (r *Route) Init() error {
 	r.echo.Use(r.middleware.RequestID())
 	r.echo.Use(r.middleware.Cors())
 	r.echo.Use(r.middleware.Logger())

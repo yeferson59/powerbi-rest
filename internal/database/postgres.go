@@ -2,7 +2,7 @@ package database
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -17,11 +17,11 @@ func NewPostgresDB(databaseURL string) *PostgresDB {
 	}
 }
 
-func (db *PostgresDB) Connect(ctx context.Context) *pgxpool.Pool {
+func (db *PostgresDB) Connect(ctx context.Context) (*pgxpool.Pool, error) {
 	conn, err := pgxpool.New(ctx, db.databaseURL)
 	if err != nil {
-		log.Fatal("failed to connect to database: %w", err)
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	return conn
+	return conn, nil
 }
