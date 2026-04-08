@@ -19,10 +19,7 @@ COPY . .
 RUN go build -o main .
 
 # Runtime stage
-FROM alpine:latest
-
-# Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates
+FROM scratch
 
 # Set working directory
 WORKDIR /root/
