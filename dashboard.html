@@ -1235,28 +1235,86 @@
         });
       }
 
+      const complexityRouteFilters = {
+        "O(1)": new Set(["/o1"]),
+        "O(n)": new Set(["/on"]),
+        "O(n log n)": new Set(["/onlogn"]),
+        "O(n²)": new Set(["/on2"]),
+        "O(2^n)": new Set(["/o2n"]),
+      };
+
+      function toNumber(value, fallback = 0) {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : fallback;
+      }
+
+      function formatMs(value, decimals = 2) {
+        return toNumber(value).toFixed(decimals);
+      }
+
+      function normalizeSummaryData(data) {
+        if (!Array.isArray(data)) return [];
+        return data
+          .filter((item) => item && typeof item === "object")
+          .map((item) => {
+            const createdMs = item.created_at ? Date.parse(item.created_at) : NaN;
+            return {
+              route: typeof item.route === "string" ? item.route : "unknown",
+              complexity:
+                typeof item.complexity === "string" ? item.complexity : "",
+              n_param: toNumber(item.n_param, 0),
+              response_ms: toNumber(item.response_ms, 0),
+              status_code: toNumber(item.status_code, 0),
+              created_at: item.created_at || null,
+              created_at_ms: Number.isFinite(createdMs) ? createdMs : null,
+            };
+          });
+      }
+
+      function applyTimeRange(data) {
+        const rangeEl = document.getElementById("time-range");
+        const rangeHours = toNumber(rangeEl?.value, 24);
+        if (rangeHours <= 0) return data;
+
+        const cutoff = Date.now() - rangeHours * 60 * 60 * 1000;
+        return data.filter(
+          (item) => item.created_at_ms === null || item.created_at_ms >= cutoff,
+        );
+      }
+
+      function filterByComplexity(data, complexity) {
+        const routeFilter = complexityRouteFilters[complexity];
+        return data.filter((item) => {
+          if (item.complexity !== complexity) return false;
+          if (!routeFilter) return true;
+          return routeFilter.has(item.route);
+        });
+      }
+
       async function refreshData() {
         if (!chartsInitialized) {
           console.log("Charts not initialized yet, skipping refresh");
           return;
         }
-        
+
         const refreshIcon = document.getElementById("refresh-icon");
-        refreshIcon.classList.add("animate-spin");
+        refreshIcon?.classList.add("animate-spin");
 
         const updateText = document.getElementById("last-updated");
         const connectionStatus = document.getElementById("connection-status");
 
-        updateText.innerText = "Loading...";
-        connectionStatus.innerHTML =
+        if (updateText) updateText.innerText = "Loading...";
+        if (connectionStatus)
+          connectionStatus.innerHTML =
           '<span class="pulse-dot w-2 h-2 rounded-full bg-yellow-400"></span> Loading';
 
         let summaryData = [];
         let apiOk = false;
+        let timeoutId = null;
 
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          timeoutId = setTimeout(() => controller.abort(), 5000);
 
           const summaryRes = await fetch(`${API_BASE}/summary`, {
             method: "GET",
@@ -1283,18 +1341,18 @@
         } catch (error) {
           console.error("Error fetching data:", error);
         } finally {
-          refreshIcon.classList.remove("animate-spin");
+          if (timeoutId) clearTimeout(timeoutId);
+          refreshIcon?.classList.remove("animate-spin");
         }
 
-        if (!Array.isArray(summaryData)) summaryData = [];
+        summaryData = normalizeSummaryData(summaryData);
+        const filteredSummary = applyTimeRange(summaryData);
 
         const filterData = (complexity) => {
-          const items = summaryData.filter(
-            (d) => d && d.complexity === complexity,
-          );
+          const items = filterByComplexity(filteredSummary, complexity);
           const grouped = items.reduce((acc, curr) => {
-            const size = Number(curr.n_param || 1);
-            const ms = Number(curr.response_ms || 0);
+            const size = toNumber(curr.n_param, 1) || 1;
+            const ms = toNumber(curr.response_ms, 0);
             if (!acc[size]) acc[size] = { sum: 0, count: 0 };
             acc[size].sum += ms;
             acc[size].count += 1;
@@ -1319,26 +1377,32 @@
         const dataO2N = filterData("O(2^n)");
 
         const rawCounts = [
-          summaryData.filter((d) => d?.complexity === "O(1)").length,
-          summaryData.filter((d) => d?.complexity === "O(n)").length,
-          summaryData.filter((d) => d?.complexity === "O(n log n)").length,
-          summaryData.filter((d) => d?.complexity === "O(n²)").length,
-          summaryData.filter((d) => d?.complexity === "O(2^n)").length,
+          filterByComplexity(filteredSummary, "O(1)").length,
+          filterByComplexity(filteredSummary, "O(n)").length,
+          filterByComplexity(filteredSummary, "O(n log n)").length,
+          filterByComplexity(filteredSummary, "O(n²)").length,
+          filterByComplexity(filteredSummary, "O(2^n)").length,
         ];
 
-        const total = summaryData.length || 0;
+        const avgO1 = extractAverages(dataO1);
+        const avgON = extractAverages(dataON);
+        const avgONLogN = extractAverages(dataONLogN);
+        const avgON2 = extractAverages(dataON2);
+        const avgO2N = extractAverages(dataO2N);
+
+        const total = filteredSummary.length || 0;
         document.getElementById("kpi-total").innerText =
           total > 0 ? total.toLocaleString() : "--";
         document.getElementById("kpi-o1").innerText =
-          extractAverages(dataO1) + " ms";
+          formatMs(avgO1) + " ms";
         document.getElementById("kpi-on").innerText =
-          extractAverages(dataON) + " ms";
+          formatMs(avgON) + " ms";
 
         if (total > 0) {
-          const successCount = summaryData.filter(
+          const successCount = filteredSummary.filter(
             (d) => d.status_code >= 200 && d.status_code < 300,
           ).length;
-          const errorCount = summaryData.filter(
+          const errorCount = filteredSummary.filter(
             (d) => d.status_code >= 400,
           ).length;
           const successRate = ((successCount / total) * 100).toFixed(1);
@@ -1362,23 +1426,23 @@
 
         // Update Comparison Bar
         comparisonChart.data.datasets[0].data = [
-          extractAverages(dataO1),
-          extractAverages(dataON),
-          extractAverages(dataONLogN),
-          extractAverages(dataON2),
-          extractAverages(dataO2N),
+          avgO1,
+          avgON,
+          avgONLogN,
+          avgON2,
+          avgO2N,
         ];
         comparisonChart.update();
 
         // Performance Score Gauge
-        const fastCount = summaryData.filter(
-          (d) => Number(d.response_ms) < 10,
+        const fastCount = filteredSummary.filter(
+          (d) => toNumber(d.response_ms) < 10,
         ).length;
-        const normalCount = summaryData.filter(
-          (d) => Number(d.response_ms) >= 10 && Number(d.response_ms) < 100,
+        const normalCount = filteredSummary.filter(
+          (d) => toNumber(d.response_ms) >= 10 && toNumber(d.response_ms) < 100,
         ).length;
-        const slowCount = summaryData.filter(
-          (d) => Number(d.response_ms) >= 100,
+        const slowCount = filteredSummary.filter(
+          (d) => toNumber(d.response_ms) >= 100,
         ).length;
 
         document.getElementById("score-fast").innerText = fastCount;
@@ -1431,24 +1495,25 @@
 
         // Histogram
         const histData = [
-          summaryData.filter((d) => Number(d.response_ms) < 10).length,
-          summaryData.filter(
-            (d) => Number(d.response_ms) >= 10 && Number(d.response_ms) < 50,
+          filteredSummary.filter((d) => toNumber(d.response_ms) < 10).length,
+          filteredSummary.filter(
+            (d) => toNumber(d.response_ms) >= 10 && toNumber(d.response_ms) < 50,
           ).length,
-          summaryData.filter(
-            (d) => Number(d.response_ms) >= 50 && Number(d.response_ms) < 100,
+          filteredSummary.filter(
+            (d) => toNumber(d.response_ms) >= 50 && toNumber(d.response_ms) < 100,
           ).length,
-          summaryData.filter(
-            (d) => Number(d.response_ms) >= 100 && Number(d.response_ms) < 500,
+          filteredSummary.filter(
+            (d) =>
+              toNumber(d.response_ms) >= 100 && toNumber(d.response_ms) < 500,
           ).length,
-          summaryData.filter((d) => Number(d.response_ms) >= 500).length,
+          filteredSummary.filter((d) => toNumber(d.response_ms) >= 500).length,
         ];
         histogramChart.data.datasets[0].data = histData;
         histogramChart.update();
 
         // Endpoints (usando 'route' que es el campo de la API)
         const endpointCounts = {};
-        summaryData.forEach((d) => {
+        filteredSummary.forEach((d) => {
           const endpoint = d.route || "unknown";
           endpointCounts[endpoint] = (endpointCounts[endpoint] || 0) + 1;
         });
@@ -1463,62 +1528,63 @@
         endpointsChart.update();
 
         // Status Codes
-        document.getElementById("status-2xx").innerText = summaryData.filter(
+        document.getElementById("status-2xx").innerText = filteredSummary.filter(
           (d) => d.status_code >= 200 && d.status_code < 300,
         ).length;
-        document.getElementById("status-3xx").innerText = summaryData.filter(
+        document.getElementById("status-3xx").innerText = filteredSummary.filter(
           (d) => d.status_code >= 300 && d.status_code < 400,
         ).length;
-        document.getElementById("status-4xx").innerText = summaryData.filter(
+        document.getElementById("status-4xx").innerText = filteredSummary.filter(
           (d) => d.status_code >= 400 && d.status_code < 500,
         ).length;
-        document.getElementById("status-5xx").innerText = summaryData.filter(
+        document.getElementById("status-5xx").innerText = filteredSummary.filter(
           (d) => d.status_code >= 500,
         ).length;
 
         // Recent Requests Table (usando 'route' y 'created_at')
         const tbody = document.getElementById("recent-requests");
-        const recent = summaryData.slice(-10).reverse();
+        const recent = [...filteredSummary]
+          .sort((a, b) => (b.created_at_ms || 0) - (a.created_at_ms || 0))
+          .slice(0, 10);
 
         if (recent.length === 0) {
           tbody.innerHTML =
             '<tr><td colspan="6" class="py-8 text-center text-gray-400">No recent requests</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = recent
-          .map((d) => {
-            const statusClass =
-              d.status_code >= 200 && d.status_code < 300
-                ? "text-green-500"
-                : d.status_code >= 400
-                  ? "text-red-500"
-                  : "text-yellow-500";
-            const complexityClass =
-              d.complexity === "O(1)"
-                ? "text-blue-500"
-                : d.complexity === "O(n)"
+        } else {
+          tbody.innerHTML = recent
+            .map((d) => {
+              const statusClass =
+                d.status_code >= 200 && d.status_code < 300
                   ? "text-green-500"
-                  : d.complexity === "O(n log n)"
-                    ? "text-yellow-500"
-                    : d.complexity === "O(n²)"
-                      ? "text-red-500"
-                      : "text-purple-500";
-            const createdAt = d.created_at
-              ? new Date(d.created_at).toLocaleString()
-              : "-";
-            return `
+                  : d.status_code >= 400
+                    ? "text-red-500"
+                    : "text-yellow-500";
+              const complexityClass =
+                d.complexity === "O(1)"
+                  ? "text-blue-500"
+                  : d.complexity === "O(n)"
+                    ? "text-green-500"
+                    : d.complexity === "O(n log n)"
+                      ? "text-yellow-500"
+                      : d.complexity === "O(n²)"
+                        ? "text-red-500"
+                        : "text-purple-500";
+              const createdAt = d.created_at
+                ? new Date(d.created_at).toLocaleString()
+                : "-";
+              return `
             <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
               <td class="py-3 px-2 font-mono text-xs">${d.route || "N/A"}</td>
               <td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs font-medium ${complexityClass} bg-gray-100 dark:bg-gray-800">${d.complexity || "N/A"}</span></td>
-              <td class="py-3 px-2">${d.n_param || "-"}</td>
-              <td class="py-3 px-2 font-medium">${d.response_ms || "0"} ms</td>
+              <td class="py-3 px-2">${d.n_param ?? "-"}</td>
+              <td class="py-3 px-2 font-medium">${formatMs(d.response_ms, 3)} ms</td>
               <td class="py-3 px-2 ${statusClass} font-medium">${d.status_code || "N/A"}</td>
               <td class="py-3 px-2 text-gray-400 text-xs">${createdAt}</td>
             </tr>
           `;
-          })
-          .join("");
+            })
+            .join("");
+        }
 
         if (apiOk) {
           const now = new Date();
@@ -1527,29 +1593,31 @@
             minute: "2-digit",
             second: "2-digit",
           });
-          updateText.innerText = timeStr;
+          if (updateText) updateText.innerText = timeStr;
           document.getElementById("footer-updated").innerText = timeStr;
-          connectionStatus.innerHTML =
+          if (connectionStatus)
+            connectionStatus.innerHTML =
             '<span class="pulse-dot w-2 h-2 rounded-full bg-green-400"></span> Live';
         } else {
-          updateText.innerText = "API unavailable";
-          connectionStatus.innerHTML =
+          if (updateText) updateText.innerText = "API unavailable";
+          if (connectionStatus)
+            connectionStatus.innerHTML =
             '<span class="pulse-dot w-2 h-2 rounded-full bg-red-400"></span> Offline';
         }
       }
 
       function extractAverages(dataArray) {
-        if (!Array.isArray(dataArray) || dataArray.length === 0) return "0.00";
+        if (!Array.isArray(dataArray) || dataArray.length === 0) return 0;
         const totalSum = dataArray.reduce(
-          (acc, curr) => acc + Number(curr.time || 0) * Number(curr.count || 0),
+          (acc, curr) => acc + toNumber(curr.time) * toNumber(curr.count),
           0,
         );
         const totalCount = dataArray.reduce(
-          (acc, curr) => acc + Number(curr.count || 0),
+          (acc, curr) => acc + toNumber(curr.count),
           0,
         );
-        if (!totalCount) return "0.00";
-        return (totalSum / totalCount).toFixed(2);
+        if (!totalCount) return 0;
+        return totalSum / totalCount;
       }
 
       function extractSeries(dataArray) {
@@ -1557,7 +1625,7 @@
           return { labels: [], data: [] };
         return {
           labels: dataArray.map((d) => d.inputSize),
-          data: dataArray.map((d) => d.time.toFixed(3)),
+          data: dataArray.map((d) => Number(toNumber(d.time).toFixed(3))),
         };
       }
 
@@ -1576,6 +1644,11 @@
           await refreshData();
         } catch (e) {
           console.error("Initial fetch failed:", e);
+        }
+
+        const timeRange = document.getElementById("time-range");
+        if (timeRange) {
+          timeRange.addEventListener("change", refreshData);
         }
 
         setInterval(refreshData, 30000);
