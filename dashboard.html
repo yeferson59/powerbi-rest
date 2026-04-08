@@ -1161,14 +1161,12 @@
                 {
                   label: "Requests",
                   data: [],
-                  backgroundColor: [
-                    colors.o1.border,
-                    colors.on.border,
-                    colors.onlogn.border,
-                    colors.on2.border,
-                    colors.o2n.border,
-                  ],
+                  backgroundColor: colors.o1.bg,
+                  borderColor: colors.o1.border,
+                  borderWidth: 1,
                   borderRadius: 4,
+                  minBarLength: 8,
+                  maxBarThickness: 24,
                 },
               ],
             },
@@ -1177,7 +1175,12 @@
               indexAxis: "y",
               scales: {
                 ...opts.scales,
-                x: { ...opts.scales.x, grid: { display: false } },
+                x: {
+                  ...opts.scales.x,
+                  grid: { display: false },
+                  beginAtZero: true,
+                  ticks: { ...opts.scales.x.ticks, precision: 0, stepSize: 1 },
+                },
                 y: { ...opts.scales.y, grid: { display: false } },
               },
             },
@@ -1523,8 +1526,16 @@
 
         document.getElementById("endpoint-count").innerText =
           sortedEndpoints.length + " endpoints";
-        endpointsChart.data.labels = sortedEndpoints.map((e) => e[0]);
-        endpointsChart.data.datasets[0].data = sortedEndpoints.map((e) => e[1]);
+        const endpointLabels = sortedEndpoints.map((e) => e[0]);
+        const endpointValues = sortedEndpoints.map((e) => toNumber(e[1], 0));
+        const endpointMax = endpointValues.length
+          ? Math.max(...endpointValues)
+          : 0;
+
+        endpointsChart.data.labels = endpointLabels;
+        endpointsChart.data.datasets[0].data = endpointValues;
+        endpointsChart.options.scales.x.suggestedMax =
+          endpointMax <= 1 ? 2 : endpointMax + 1;
         endpointsChart.update();
 
         // Status Codes
